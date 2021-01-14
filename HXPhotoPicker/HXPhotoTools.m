@@ -1,9 +1,9 @@
 //
 //  HXPhotoTools.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/8.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/8.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoTools.h"
@@ -13,6 +13,8 @@
 #import <sys/utsname.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AVFoundation/AVFoundation.h>
+
+#import <PhotosUI/PhotosUI.h>
 
 #if __has_include(<SDWebImage/UIImageView+WebCache.h>)
 #import <SDWebImage/UIImageView+WebCache.h>
@@ -33,6 +35,8 @@
 #import "YYKit.h"
 #endif
 
+#import "HXAssetManager.h"
+
 NSString *const hx_kFigAppleMakerNote_AssetIdentifier = @"17";
 NSString *const hx_kKeySpaceQuickTimeMetadata = @"mdta";
 NSString *const hx_kKeyStillImageTime = @"com.apple.quicktime.still-image-time";
@@ -48,33 +52,6 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     }else if (photoModel.subType == HXPhotoModelMediaSubTypeVideo) {
         
     }
-}
-+ (CLGeocoder *)getDateLocationDetailInformationWithModel:(HXPhotoDateModel *)model
-                                               completion:(void (^)(CLPlacemark * _Nullable placemark, HXPhotoDateModel *model, NSError * _Nullable error))completion {
-    CLGeocoder *geoCoder = [[CLGeocoder alloc] init]; 
-    [geoCoder reverseGeocodeLocation:model.location completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
-        CLPlacemark *placemark = placemarks.firstObject;
-        if (completion) {
-            completion(placemark,model, error);
-        }
-    }];
-    return geoCoder;
-//    NSMutableArray *placemarkArray = [NSMutableArray array];
-//    NSInteger locationCount = 0;
-//    for (HXPhotoModel *subModel in model.photoModelArray) {
-//        if (subModel.asset.location) {
-//            [geoCoder reverseGeocodeLocation:subModel.asset.location completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
-//                if (placemarks.count > 0 && !error) {
-//                    CLPlacemark *placemark = placemarks.firstObject;
-//                    [placemarkArray addObject:placemark];
-//                    if (placemark) {
-//                        <#statements#>
-//                    }
-//                }
-//            }];
-//            locationCount++;
-//        }
-//    }
 }
 
 /**
@@ -170,28 +147,27 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
 + (void)requestAuthorization:(UIViewController *)viewController
                         handler:(void (^)(PHAuthorizationStatus status))handler {
     PHAuthorizationStatus status = [self authorizationStatus];
-#ifdef __IPHONE_14_0
-    if (@available(iOS 14, *)) {
-        if (status == PHAuthorizationStatusLimited) {
-            if (handler) handler(status);
-            [self showNoAuthorizedAlertWithViewController:viewController status:status];
-            return;
-        }
-    }
-#endif
     if (status == PHAuthorizationStatusAuthorized) {
         if (handler) handler(status);
-    }else if (status == PHAuthorizationStatusDenied ||
-              status == PHAuthorizationStatusRestricted) {
+    }
+#ifdef __IPHONE_14_0
+    else if (@available(iOS 14, *)) {
+        if (status == PHAuthorizationStatusLimited) {
+            if (handler) handler(status);
+        }
+#endif
+    else if (status == PHAuthorizationStatusDenied ||
+             status == PHAuthorizationStatusRestricted) {
         if (handler) handler(status);
         [self showNoAuthorizedAlertWithViewController:viewController status:status];
     }else {
 #ifdef __IPHONE_14_0
         if (@available(iOS 14, *)) {
-            [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly handler:^(PHAuthorizationStatus status) {
+            [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelReadWrite handler:^(PHAuthorizationStatus status) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (handler) handler(status);
-                    if (status != PHAuthorizationStatusAuthorized) {
+                    if (status != PHAuthorizationStatusAuthorized &&
+                        status != PHAuthorizationStatusLimited) {
                         [self showNoAuthorizedAlertWithViewController:viewController status:status];
                     }else {
                         [[NSNotificationCenter defaultCenter] postNotificationName:@"HXPhotoRequestAuthorizationCompletion" object:nil];
@@ -215,6 +191,20 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
             }];
         }
     }
+#ifdef __IPHONE_14_0
+    }else {
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (handler) handler(status);
+                if (status != PHAuthorizationStatusAuthorized) {
+                    [self showNoAuthorizedAlertWithViewController:viewController status:status];
+                }else {
+                    [[NSNotificationCenter defaultCenter] postNotificationName:@"HXPhotoRequestAuthorizationCompletion" object:nil];
+                }
+            });
+        }];
+    }
+#endif
 }
 + (void)showNoAuthorizedAlertWithViewController:(UIViewController *)viewController
                                          status:(PHAuthorizationStatus)status {
@@ -225,14 +215,24 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     if (@available(iOS 14, *)) {
         if (status == PHAuthorizationStatusLimited) {
             hx_showAlert(viewController, [NSBundle hx_localizedStringForKey:@"无法访问所有照片"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相册中允许访问所有照片"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"], nil, ^{
-                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+                if (@available(iOS 10.0, *)) {
+                    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                }else {
+                    [[UIApplication sharedApplication] openURL:url];
+                }
             });
             return;;
         }
     }
 #endif
     hx_showAlert(viewController, [NSBundle hx_localizedStringForKey:@"无法访问相册"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相册中允许访问相册"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"], nil, ^{
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+        if (@available(iOS 10.0, *)) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }else {
+            [[UIApplication sharedApplication] openURL:url];
+        }
     });
 }
 
@@ -240,7 +240,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     PHAuthorizationStatus status;
 #ifdef __IPHONE_14_0
     if (@available(iOS 14, *)) {
-        status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelAddOnly];
+        status = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
 #else
     if(NO) {
 #endif
@@ -248,6 +248,27 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
         status = [PHPhotoLibrary authorizationStatus];
     }
     return status;
+}
++ (BOOL)authorizationStatusIsLimited {
+    PHAuthorizationStatus status = [self authorizationStatus];
+#ifdef __IPHONE_14_0
+    if (@available(iOS 14, *)) {
+        if (status == PHAuthorizationStatusLimited) {
+            return YES;
+        }
+    }
+#endif
+    return NO;
+}
++ (void)showUnusableCameraAlert:(UIViewController *)vc {
+    hx_showAlert(vc, [NSBundle hx_localizedStringForKey:@"无法使用相机"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相机中允许访问相机"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"] , nil, ^{
+        NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+        if (@available(iOS 10.0, *)) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }else {
+            [[UIApplication sharedApplication] openURL:url];
+        }
+    });
 }
 + (void)exportEditVideoForAVAsset:(AVAsset *)asset
                         timeRange:(CMTimeRange)timeRange
@@ -322,7 +343,9 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     // 判断授权状态
     [self requestAuthorization:nil handler:^(PHAuthorizationStatus status) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (status != PHAuthorizationStatusAuthorized) {
+            if (status == PHAuthorizationStatusNotDetermined ||
+                status == PHAuthorizationStatusRestricted ||
+                status == PHAuthorizationStatusDenied) {
                 if (complete) {
                     complete(nil, NO);
                 }
@@ -361,10 +384,11 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
                 }
                 if (HXShowLog) NSSLog(@"保存失败");
                 return;
-            }else { 
-                if (createdAsset.localIdentifier) {
-                    if (complete) {
-                        HXPhotoModel *photoModel = [HXPhotoModel photoModelWithPHAsset:[[PHAsset fetchAssetsWithLocalIdentifiers:@[createdAsset.localIdentifier] options:nil] firstObject]];
+            }else {
+                if (complete) {
+                    if (createdAsset.localIdentifier) {
+                        HXPhotoModel *photoModel = [HXPhotoModel photoModelWithPHAsset:[HXAssetManager fetchAssetWithLocalIdentifier:createdAsset.localIdentifier]];
+                        photoModel.videoURL = videoURL;
                         photoModel.creationDate = [NSDate date];
                         complete(photoModel, YES);
                     }
@@ -405,21 +429,27 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
         }
         return;
     }
+    if (photo.imageOrientation != UIImageOrientationUp) {
+        photo = [photo hx_normalizedImage];
+    }
     if (!albumName) {
         albumName = [NSBundle mainBundle].infoDictionary[(NSString *)kCFBundleNameKey];
     }
     // 判断授权状态
     [self requestAuthorization:nil handler:^(PHAuthorizationStatus status) {
-        if (status != PHAuthorizationStatusAuthorized) return;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (!HX_IOS9Later) {
-                UIImage *tempImage = photo;
-                if (tempImage.imageOrientation != UIImageOrientationUp) {
-                    tempImage = [tempImage hx_normalizedImage];
-                }
-                UIImageWriteToSavedPhotosAlbum(tempImage, nil, nil, nil);
+            if (status == PHAuthorizationStatusNotDetermined ||
+                status == PHAuthorizationStatusRestricted ||
+                status == PHAuthorizationStatusDenied) {
                 if (complete) {
-                    HXPhotoModel *photoModel = [HXPhotoModel photoModelWithImage:tempImage];
+                    complete(nil, NO);
+                }
+                return;
+            }
+            if (!HX_IOS9Later) {
+                UIImageWriteToSavedPhotosAlbum(photo, nil, nil, nil);
+                if (complete) {
+                    HXPhotoModel *photoModel = [HXPhotoModel photoModelWithImage:photo];
                     photoModel.creationDate = [NSDate date];
                     photoModel.location = location;
                     complete(photoModel, YES);
@@ -443,10 +473,15 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
                 if (HXShowLog) NSSLog(@"保存失败");
                 return;
             }else {
-                if (complete && createdAsset.localIdentifier) {
-                    HXPhotoModel *photoModel = [HXPhotoModel photoModelWithPHAsset:[[PHAsset fetchAssetsWithLocalIdentifiers:@[createdAsset.localIdentifier] options:nil] firstObject]];
-                    photoModel.creationDate = [NSDate date];
-                    complete(photoModel, YES);
+                if (complete) {
+                    if (createdAsset.localIdentifier) {
+                        HXPhotoModel *photoModel = [HXPhotoModel photoModelWithPHAsset:[HXAssetManager fetchAssetWithLocalIdentifier:createdAsset.localIdentifier]];
+                        photoModel.thumbPhoto = photo;
+                        photoModel.previewPhoto = photo;
+                        photoModel.location = location;
+                        photoModel.creationDate = [NSDate date];
+                        complete(photoModel, YES);
+                    }
                 }
             }
             
@@ -461,7 +496,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
                 [[PHAssetCollectionChangeRequest changeRequestForAssetCollection:collection] insertAssets:@[createdAsset] atIndexes:[NSIndexSet indexSetWithIndex:0]];
             } error:&error];
             
-            if (error) {
+            if (error != nil) {
                 if (HXShowLog) NSSLog(@"保存自定义相册失败");
             } else {
                 if (HXShowLog) NSSLog(@"保存自定义相册成功");
@@ -489,7 +524,6 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
         NSError * error1 = nil;
         __block NSString * createCollectionID = nil;
         [[PHPhotoLibrary sharedPhotoLibrary] performChangesAndWait:^{
-            NSString * title = [NSBundle mainBundle].infoDictionary[(NSString *)kCFBundleNameKey];
             createCollectionID = [PHAssetCollectionChangeRequest creationRequestForAssetCollectionWithTitle:title].placeholderForCreatedAssetCollection.localIdentifier;
         } error:&error1];
         
@@ -724,6 +758,9 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     }
     CGImageSourceRef imageSourceRef = CGImageSourceCreateWithData((CFDataRef)[NSData dataWithContentsOfFile:originJPGPath.path], nil);
      if (!imageSourceRef) {
+         if (dest) {
+             CFRelease(dest);
+         }
          if (completion) {
              completion(NO);
          }
@@ -731,6 +768,12 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
      }
     NSMutableDictionary *metaData = [(__bridge_transfer  NSDictionary*)CGImageSourceCopyPropertiesAtIndex(imageSourceRef, 0, nil) mutableCopy];
     if (!metaData) {
+        if (dest) {
+            CFRelease(dest);
+        }
+        if (imageSourceRef) {
+            CFRelease(imageSourceRef);
+        }
         if (completion) {
             completion(NO);
         }
@@ -769,7 +812,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     if([reader canAddOutput:videoOutput]) {
         [reader addOutput:videoOutput];
     } else {
-        NSLog(@"Add video output error\n");
+        NSSLog(@"Add video output error\n");
     }
     NSString *videoCodeec;
     if (@available(iOS 11.0, *)) {
@@ -787,7 +830,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     
     AVAssetWriter *writer = [AVAssetWriter assetWriterWithURL:finalMovPath fileType:AVFileTypeQuickTimeMovie error:&error_two];
     if(error_two) {
-        NSLog(@"CreateWriterError:%@\n",error_two);
+        NSSLog(@"CreateWriterError:%@\n",error_two);
     }
     writer.metadata = @[ [self metaDataSet:assetIdentifier]];
                               
@@ -803,7 +846,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
     AVAssetReader *audioReader;
     AVAsset *aAudioAsset = [AVAsset assetWithURL:originMovPath];
     if (aAudioAsset.tracks.count > 1) {
-        NSLog(@"Has Audio");
+        NSSLog(@"Has Audio");
         // setup audio writer
         audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:nil];
         audioInput.expectsMediaDataInRealTime = NO;
@@ -817,13 +860,13 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
         NSError *audioReaderError = nil;
         audioReader = [AVAssetReader assetReaderWithAsset:aAudioAsset error:&audioReaderError];
         if (audioReaderError) {
-            NSLog(@"Unable to read Asset, error: %@",audioReaderError);
+            NSSLog(@"Unable to read Asset, error: %@",audioReaderError);
         }
         
         if ([audioReader canAddOutput:audioOutput]) {
             [audioReader addOutput:audioOutput];
         } else {
-            NSLog(@"cant add audio reader");
+            NSSLog(@"cant add audio reader");
         }
     }
                               
@@ -907,7 +950,7 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
         if (completion) {
             completion(NO);
         }
-        NSLog(@"cannot write: %@", writer.error);
+        NSSLog(@"cannot write: %@", writer.error);
     } else {
         if (completion) {
             completion(YES);
@@ -981,5 +1024,25 @@ NSString *const hx_kKeyContentIdentifier = @"com.apple.quicktime.content.identif
 /// 删除下载的网络视频缓存文件
 + (void)deleteNetWorkVideoFile {
     [[NSFileManager defaultManager] removeItemAtPath:HXPhotoPickerCachesDownloadPath error:nil];
+}
+    
+    
++ (CGFloat)getStatusBarHeight {
+    CGFloat statusBarHeight = 0;
+    if (@available(iOS 13.0, *)) {
+        UIStatusBarManager *statusBarManager = [UIApplication sharedApplication].windows.firstObject.windowScene.statusBarManager;
+        statusBarHeight = statusBarManager.statusBarFrame.size.height;
+        if ([UIApplication sharedApplication].statusBarHidden) {
+            statusBarHeight = HX_IS_IPhoneX_All ? 44: 20;
+        }
+    }
+    else {
+        if ([UIApplication sharedApplication].statusBarHidden) {
+            statusBarHeight = HX_IS_IPhoneX_All ? 44: 20;
+        }else {
+            statusBarHeight = [UIApplication sharedApplication].statusBarFrame.size.height;
+        }
+    }
+    return statusBarHeight;
 }
 @end

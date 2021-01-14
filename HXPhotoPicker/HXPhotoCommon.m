@@ -1,9 +1,9 @@
 //
 //  HXPhotoCommon.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2019/1/8.
-//  Copyright © 2019年 洪欣. All rights reserved.
+//  Created by Silence on 2019/1/8.
+//  Copyright © 2019年 Silence. All rights reserved.
 //
 
 #import "HXPhotoCommon.h"
@@ -43,6 +43,7 @@ static id instance;
     self = [super init];
     if (self) {
         self.isVCBasedStatusBarAppearance = [[[NSBundle mainBundle]objectForInfoDictionaryKey:@"UIViewControllerBasedStatusBarAppearance"] boolValue];
+        
 #if HasAFNetworking
         self.sessionManager = [[AFURLSessionManager alloc] initWithSessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
         [self listenNetWorkStatus];
@@ -52,10 +53,23 @@ static id instance;
             self.cameraImageURL = imageURL;
         }
         self.cameraRollLocalIdentifier = [[NSUserDefaults standardUserDefaults] objectForKey:@"HXCameraRollLocalIdentifier"];
-
-        if ([HXPhotoTools authorizationStatus] == PHAuthorizationStatusAuthorized) {
+        
+        PHAuthorizationStatus status = [HXPhotoTools authorizationStatus];
+        if (status == PHAuthorizationStatusAuthorized) {
             [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
-        }else {
+        }
+#ifdef __IPHONE_14_0
+        else if (@available(iOS 14, *)) {
+            if (status == PHAuthorizationStatusLimited) {
+                self.cameraRollLocalIdentifier = nil;
+                self.cameraRollResult = nil;
+                [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+            }else {
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(requestAuthorizationCompletion) name:@"HXPhotoRequestAuthorizationCompletion" object:nil];
+            }
+        }
+#endif
+        else {
             [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(requestAuthorizationCompletion) name:@"HXPhotoRequestAuthorizationCompletion" object:nil];
         }
     }
@@ -68,14 +82,31 @@ static id instance;
     }
 }
 - (void)requestAuthorizationCompletion {
-    if (!self.hasAuthorization && [HXPhotoTools authorizationStatus] == PHAuthorizationStatusAuthorized) {
-        self.hasAuthorization = YES;
-        [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+    if (!self.hasAuthorization) {
+        PHAuthorizationStatus status = [HXPhotoTools authorizationStatus];
+        if (status == PHAuthorizationStatusAuthorized) {
+            self.hasAuthorization = YES;
+            [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+        }
+#ifdef __IPHONE_14_0
+        else if (@available(iOS 14, *)) {
+            if (status == PHAuthorizationStatusLimited) {
+                self.cameraRollLocalIdentifier = nil;
+                self.cameraRollResult = nil;
+                self.hasAuthorization = YES;
+                [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+            }
+        }
+#endif
     }
 }
 
 #pragma mark - < PHPhotoLibraryChangeObserver >
 - (void)photoLibraryDidChange:(PHChange *)changeInstance {
+//    if (!self.cameraRollResult) {
+//        [self photoListReload];
+//        return;
+//    }
     PHFetchResultChangeDetails *collectionChanges = [changeInstance changeDetailsForFetchResult:self.cameraRollResult];
     if (collectionChanges) {
         if ([collectionChanges hasIncrementalChanges]) {
@@ -89,8 +120,27 @@ static id instance;
                     [[NSNotificationCenter defaultCenter] postNotificationName:@"HXPhotoViewNeedReloadNotification" object:nil];
                 });
             }
+        }else {
+            PHFetchResult *result = collectionChanges.fetchResultAfterChanges;
+            self.cameraRollResult = result;
+            [self photoListReload];
         }
     }
+}
+- (void)photoListReload {
+    dispatch_async(dispatch_get_main_queue(), ^{
+#ifdef __IPHONE_14_0
+        if (@available(iOS 14, *)) {
+            PHAuthorizationStatus status = [HXPhotoTools authorizationStatus];
+            if (status == PHAuthorizationStatusLimited) {
+                if (self.photoLibraryDidChange) {
+                    self.photoLibraryDidChange();
+                }
+            }
+        }
+#endif
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HXPhotoViewNeedReloadNotification" object:nil];
+    });
 }
 - (NSBundle *)languageBundle {
     if (!_languageBundle) {
@@ -147,6 +197,8 @@ static id instance;
 - (BOOL)isDark {
     if (self.photoStyle == HXPhotoStyleDark) {
         return YES;
+    }else if (self.photoStyle == HXPhotoStyleInvariant) {
+        return NO;
     }
 #ifdef __IPHONE_13_0
     if (@available(iOS 13.0, *)) {
@@ -178,13 +230,22 @@ static id instance;
             if ([imageData writeToFile:fullPathToFile atomically:YES]) {
                 NSURL *imageURL = [NSURL fileURLWithPath:fullPathToFile];
                 [[NSUserDefaults standardUserDefaults] setURL:imageURL forKey:HXCameraImageKey];
+                self.cameraImageURL = imageURL;
             }
             self.cameraImage = nil;
         });
     }
 }
 - (void)setCameraImage:(UIImage *)cameraImage {
-    _cameraImage = [cameraImage hx_scaleImagetoScale:0.4];
+    if (!cameraImage) {
+        _cameraImage = nil;
+    }
+    UIImage *image = [cameraImage hx_scaleImagetoScale:0.4];
+    if (image) {
+        _cameraImage = image;
+    }else {
+        _cameraImage = cameraImage;
+    }
 }
 /** 初始化并监听网络变化 */
 - (void)listenNetWorkStatus {
@@ -192,11 +253,10 @@ static id instance;
     AFNetworkReachabilityManager *manager = [AFNetworkReachabilityManager sharedManager];
     self.netStatus = manager.networkReachabilityStatus;
     [manager startMonitoring];
-    HXWeakSelf
     [manager setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
-        weakSelf.netStatus = status;
-        if (weakSelf.reachabilityStatusChangeBlock) {
-            weakSelf.reachabilityStatusChangeBlock(status);
+        self.netStatus = status;
+        if (self.reachabilityStatusChangeBlock) {
+            self.reachabilityStatusChangeBlock(status);
         }
     }];
 #endif
@@ -224,7 +284,6 @@ static id instance;
             progress(downloadProgress.fractionCompleted, downloadProgress.completedUnitCount, downloadProgress.totalUnitCount, videoURL);
             }
         });
-//        NSLog(@"下载进度：%.0f％", downloadProgress.fractionCompleted * 100);
     } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
         return videoFileURL;
     } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
@@ -240,23 +299,22 @@ static id instance;
                 }
             }
         });
-//        NSLog(@"下载完成");
     }];
     [downloadTask resume];
     return downloadTask;
 #else
+    /// pod导入的请改成 "HXPhotoPicker/SDWebImage_AF" 或 "HXPhotoPicker/YYWebImage_AF"
     NSSLog(@"没有导入AFNetworking网络框架无法下载视频");
     return nil;
 #endif
 }
+
 + (void)deallocPhotoCommon {
     once = 0;
     once1 = 0;
     instance = nil;
 }
 - (void)dealloc {
-//    NSSLog(@"dealloc");
-    
     [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"HXPhotoRequestAuthorizationCompletion" object:nil];
 #if HasAFNetworking

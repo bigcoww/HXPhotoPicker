@@ -2,12 +2,13 @@
 //  HXPhotoEditStickerItemContentView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/23.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/23.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditStickerItemContentView.h"
 #import "HXPhotoEditStickerItem.h"
+#import "HX_PhotoEditViewController.h"
 
 @interface HXPhotoEditStickerItemContentView ()<UIGestureRecognizerDelegate>
 @property (strong, nonatomic) UIImageView *imageView;
@@ -37,7 +38,7 @@
 
 #pragma mark - UIGestureRecognizerDelegate
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if ([otherGestureRecognizer.delegate isKindOfClass:NSClassFromString(@"HX_PhotoEditViewController")]) {
+    if ([otherGestureRecognizer.delegate isKindOfClass:[HX_PhotoEditViewController class]]) {
         return NO;
     }
     if ([otherGestureRecognizer isKindOfClass:[UITapGestureRecognizer class]] &&

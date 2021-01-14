@@ -1,9 +1,9 @@
 //
 //  UIView+HXExtension.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/16.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/16.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "UIView+HXExtension.h"
@@ -149,9 +149,7 @@
                 nav.modalPresentationCapturesStatusBarAppearance = YES;
                 [weakSelf.hx_viewController presentViewController:nav animated:YES completion:nil];
             }else {
-                hx_showAlert(weakSelf.hx_viewController, [NSBundle hx_localizedStringForKey:@"无法使用相机"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相机中允许访问相机"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"] , nil, ^{
-                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-                });
+                [HXPhotoTools showUnusableCameraAlert:weakSelf.hx_viewController];
             }
         });
     }];
@@ -177,7 +175,7 @@
         hud.transform = CGAffineTransformIdentity;
     } completion:nil];
     [UIView cancelPreviousPerformRequestsWithTarget:self];
-    [self performSelector:@selector(handleGraceTimer) withObject:nil afterDelay:1.75f inModes:@[NSRunLoopCommonModes]];
+    [self performSelector:@selector(hx_handleGraceTimer) withObject:nil afterDelay:1.75f inModes:@[NSRunLoopCommonModes]];
 } 
 
 - (void)hx_immediatelyShowLoadingHudWithText:(NSString *)text {
@@ -244,27 +242,34 @@
         }
     }
 }
-- (void)hx_handleImageWithDelay:(NSTimeInterval)delay {
-    if (delay) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self handleGraceTimer];
-        });
-    }else {
-        [self handleGraceTimer];
-    }
-}
-- (void)handleGraceTimer {
+- (void)hx_handleImageWithAnimation:(BOOL)animation {
     [UIView cancelPreviousPerformRequestsWithTarget:self];
     for (UIView *view in self.subviews) {
         if ([view isKindOfClass:[HXHUD class]] && [(HXHUD *)view isImage]) {
-            [UIView animateWithDuration:0.25f animations:^{
-                view.alpha = 0;
-                view.transform = CGAffineTransformMakeScale(0.5, 0.5);
-            } completion:^(BOOL finished) {
+            if (animation) {
+                [UIView animateWithDuration:0.25f animations:^{
+                    view.alpha = 0;
+                    view.transform = CGAffineTransformMakeScale(0.5, 0.5);
+                } completion:^(BOOL finished) {
+                    [view removeFromSuperview];
+                }];
+            }else {
                 [view removeFromSuperview];
-            }];
+            }
         }
     }
+}
+- (void)hx_handleImageWithDelay:(NSTimeInterval)delay {
+    if (delay) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self hx_handleGraceTimer];
+        });
+    }else {
+        [self hx_handleGraceTimer];
+    }
+}
+- (void)hx_handleGraceTimer {
+    [self hx_handleImageWithAnimation:YES];
 }
 /**
  圆角

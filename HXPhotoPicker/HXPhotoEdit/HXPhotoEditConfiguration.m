@@ -2,8 +2,8 @@
 //  HXPhotoEditConfiguration.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/7/6.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/6.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditConfiguration.h"
@@ -18,11 +18,17 @@
     }
     return self;
 }
-- (CGFloat)lineWidth {
-    if (!_lineWidth) {
-        _lineWidth = 5.f;
+- (CGFloat)brushLineMaxWidth {
+    if (!_brushLineMaxWidth) {
+        _brushLineMaxWidth = 12.f;
     }
-    return _lineWidth;
+    return _brushLineMaxWidth;
+}
+- (CGFloat)brushLineMinWidth {
+    if (!_brushLineMinWidth) {
+        _brushLineMinWidth = 3.f;
+    }
+    return _brushLineMinWidth;
 }
 - (UIColor *)themeColor {
     if (!_themeColor) {
@@ -33,6 +39,7 @@
 - (NSArray<UIColor *> *)drawColors {
     if (!_drawColors) {
         _drawColors = @[[UIColor hx_colorWithHexStr:@"#ffffff"], [UIColor hx_colorWithHexStr:@"#2B2B2B"], [UIColor hx_colorWithHexStr:@"#FA5150"], [UIColor hx_colorWithHexStr:@"#FEC200"], [UIColor hx_colorWithHexStr:@"#07C160"], [UIColor hx_colorWithHexStr:@"#10ADFF"], [UIColor hx_colorWithHexStr:@"#6467EF"]];
+        self.defaultDarwColorIndex = 2;
     }
     return _drawColors;
 }
@@ -50,13 +57,15 @@
 }
 - (NSArray<HXPhotoEditChartletTitleModel *> *)chartletModels {
     if (!_chartletModels) {
-        HXPhotoEditChartletTitleModel *netModel = [HXPhotoEditChartletTitleModel modelWithNetworkNURL:[NSURL URLWithString:@"http://tsnrhapp.oss-cn-hangzhou.aliyuncs.com/chartle/xxy_s_highlighted.png"]];
-        NSString *prefix = @"http://tsnrhapp.oss-cn-hangzhou.aliyuncs.com/chartle/xxy%d.png";
-        NSMutableArray *netModels = @[].mutableCopy;
-        for (int i = 1; i <= 40; i++) {
-            [netModels addObject:[HXPhotoEditChartletModel modelWithNetworkNURL:[NSURL URLWithString:[NSString stringWithFormat:prefix ,i]]]];
+        HXPhotoEditChartletTitleModel *netModel = [HXPhotoEditChartletTitleModel modelWithImageNamed:@"hx_sticker_cover"];
+        
+        NSArray *imageNames = @[@"chongya", @"jintianfenkeai", @"keaibiaoq", @"saihong", @"xiaochuzhujiao", @"yuanqimanman", @"yuanqishaonv", @"zaizaijia", @"haoxinqing", @"housailei", @"kehaixing", @"wow", @"woxiangfazipai" ];
+        NSMutableArray *models = [NSMutableArray array];
+        for (NSString *imageNamed in imageNames) {
+            HXPhotoEditChartletModel *subModel = [HXPhotoEditChartletModel modelWithImageNamed:[NSString stringWithFormat:@"hx_sticker_%@", imageNamed]];
+            [models addObject:subModel];
         }
-        netModel.models = netModels.copy;
+        netModel.models = models.copy;
         _chartletModels = @[netModel];
     }
     return _chartletModels;

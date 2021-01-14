@@ -1,9 +1,9 @@
 //
 //  HXPhotoPreviewViewCell.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2019/12/5.
-//  Copyright © 2019 洪欣. All rights reserved.
+//  Created by Silence on 2019/12/5.
+//  Copyright © 2019 Silence. All rights reserved.
 //
 
 #import "HXPhotoPreviewViewCell.h"
@@ -96,7 +96,11 @@
         imgHeight = width / imgWidth * imgHeight;
         w = width;
         h = imgHeight;
-        self.scrollView.maximumZoomScale = 2.5;
+        if (w < h) {
+            self.scrollView.maximumZoomScale = self.frame.size.width * 2.5f / w;
+        } else {
+            self.scrollView.maximumZoomScale = self.frame.size.height * 2.5f / h;
+        }
         self.previewContentView.frame = CGRectMake(0, 0, w, h);
         if (h < height) {
             self.previewContentView.center = CGPointMake(width / 2, height / 2);
@@ -132,7 +136,11 @@
         imgHeight = width / imgWidth * imgHeight;
         w = width;
         h = imgHeight;
-        self.scrollView.maximumZoomScale = 2.5;
+        if (w < h) {
+            self.scrollView.maximumZoomScale = self.frame.size.width * 2.5f / w;
+        } else {
+            self.scrollView.maximumZoomScale = self.frame.size.height * 2.5f / h;
+        }
 
         self.previewContentView.frame = CGRectMake(0, 0, w, h);
         if (h < height) {
@@ -208,8 +216,6 @@
 - (UIScrollView *)scrollView {
     if (!_scrollView) {
     _scrollView = [[UIScrollView alloc] init];
-    _scrollView.showsHorizontalScrollIndicator = NO;
-    _scrollView.showsVerticalScrollIndicator = NO;
     _scrollView.bouncesZoom = YES;
     _scrollView.minimumZoomScale = 1;
     _scrollView.multipleTouchEnabled = YES;

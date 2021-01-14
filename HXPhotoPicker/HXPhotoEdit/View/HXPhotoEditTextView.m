@@ -2,8 +2,8 @@
 //  HXPhotoEditTextView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/22.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/22.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditTextView.h"
@@ -15,6 +15,7 @@
 #import "HXPhotoEditConfiguration.h"
 #import "NSBundle+HXPhotoPicker.h"
 #import "UIFont+HXExtension.h"
+#import "HXPhotoTools.h"
 
 #define HXEditTextBlankWidth 22
 #define HXEditTextRadius 8.f
@@ -91,8 +92,8 @@
     [self.doneBtn setTitle:[NSBundle hx_localizedStringForKey:@"完成"] forState:UIControlStateNormal];
     self.doneBtn.titleLabel.font = [UIFont hx_mediumPingFangOfSize:16];
     self.textBtn.layer.cornerRadius = 1.f;
-    [self.textBtn setImage:[UIImage hx_imageNamed:@"hx_photo_edit_text_ normal"] forState:UIControlStateNormal];
-    [self.textBtn setImage:[UIImage hx_imageNamed:@"hx_photo_edit_text_selected"] forState:UIControlStateSelected];
+    [self.textBtn setImage:[UIImage hx_imageContentsOfFile:@"hx_photo_edit_text_ normal"] forState:UIControlStateNormal];
+    [self.textBtn setImage:[UIImage hx_imageContentsOfFile:@"hx_photo_edit_text_selected"] forState:UIControlStateSelected];
     UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (orientation == UIInterfaceOrientationLandscapeRight || orientation == UIInterfaceOrientationLandscapeLeft) {
         self.topViewHeightConstraint.constant = 50;

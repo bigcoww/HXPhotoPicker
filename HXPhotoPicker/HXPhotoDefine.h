@@ -1,15 +1,19 @@
 //
 //  HXPhotoDefine.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/24.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/24.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #ifndef HXPhotoDefine_h
 #define HXPhotoDefine_h
 
 #import <CommonCrypto/CommonDigest.h>
+#import "NSBundle+HXPhotoPicker.h"
+
+/// 当前版本
+#define HXVersion @"3.1.8"
 
 // 日志输出
 #ifdef DEBUG
@@ -17,11 +21,6 @@
 #else
 #define NSSLog(...)
 #endif
-
-/**
- 版本号 x.x.x
- */
-#define HXVersion @"3.0.5"
 
 /// 如果想要HXPhotoView的item大小自定义设置，请修改为 1
 /// 并且实现HXPhotoView的代理
@@ -64,9 +63,13 @@
 
 #define HXPhotoPickerLivePhotoImagesPath [HXPhotoPickerCachesLivePhotoPath stringByAppendingPathComponent:@"images"]
 
-#define HXShowLog YES
+#define HXShowLog NO
 
 #define HX_UI_IS_IPAD (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+
+#define HX_ALLOW_LOCATION ([[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationWhenInUseUsageDescription"] || [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSLocationAlwaysUsageDescription"])
+
+#define HX_PREFERS_STATUS_BAR_HIDDEN [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"UIViewControllerBasedStatusBarAppearance"] boolValue]
 
 #define HasAFNetworking (__has_include(<AFNetworking/AFNetworking.h>) || __has_include("AFNetworking.h"))
 
@@ -95,14 +98,30 @@
 //判断iPhoneXs Max
 #define HX_Is_iPhoneXS_MAX ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1242, 2688), [[UIScreen mainScreen] currentMode].size) && !HX_UI_IS_IPAD : NO)
 
-#define HX_IS_IPhoneX_All (HX_Is_iPhoneX || HX_Is_iPhoneXR || HX_Is_iPhoneXS || HX_Is_iPhoneXS_MAX || HX_IS_IPHONEX) 
+//判断iPHone12 mini
+#define HX_Is_iPhoneTwelveMini ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1080, 2340), [[UIScreen mainScreen] currentMode].size) && !HX_UI_IS_IPAD : NO)
+
+//判断iPHone12 和 iPHone12 Pro
+#define HX_Is_iPhoneTwelvePro ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1170, 2532), [[UIScreen mainScreen] currentMode].size) && !HX_UI_IS_IPAD : NO)
+
+//判断iPHone12 ProMax
+#define HX_Is_iPhoneTwelveProMax ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1284, 2778), [[UIScreen mainScreen] currentMode].size) && !HX_UI_IS_IPAD : NO)
+
+#define HX_IS_IPhoneX_All (HX_Is_iPhoneX || HX_Is_iPhoneXR || HX_Is_iPhoneXS || HX_Is_iPhoneXS_MAX || HX_IS_IPHONEX || HX_Is_iPhoneTwelveMini || HX_Is_iPhoneTwelvePro || HX_Is_iPhoneTwelveProMax)
 
 // 导航栏 + 状态栏 的高度
-#define hxNavigationBarHeight (HX_IS_IPhoneX_All ? 88 : 64)
+#define hxNavigationBarHeight (44 + HXStatusBarHeight)
 #define hxTopMargin (HX_IS_IPhoneX_All ? 44 : 0)
 #define hxBottomMargin (HX_IS_IPhoneX_All ? 34 : 0)
+#define HXStatusBarHeight [HXPhotoTools getStatusBarHeight]
+
+#define HX_IOS14_Later ([UIDevice currentDevice].systemVersion.floatValue >= 14.0f)
+
+#define HX_IOS13_Later ([UIDevice currentDevice].systemVersion.floatValue >= 13.0f)
 
 #define HX_IOS11_Later ([UIDevice currentDevice].systemVersion.floatValue >= 11.0f)
+
+#define HX_IOS11_Earlier  ([UIDevice currentDevice].systemVersion.floatValue < 11.0f)
 
 #define HX_IOS10_Later ([UIDevice currentDevice].systemVersion.floatValue >= 10.0f)
 
@@ -117,9 +136,7 @@
 // 弱引用
 #define HXWeakSelf __weak typeof(self) weakSelf = self;
 // 强引用
-#define HXStrongSelf __strong typeof(self) strongSelf = weakSelf;
-
-
+#define HXStrongSelf __strong typeof(weakSelf) strongSelf = weakSelf;
 
 #pragma mark - Hash
 
@@ -149,7 +166,6 @@ static inline NSString * _Nonnull HXDiskCacheFileNameForKey(NSString * _Nullable
     return filename;
 }
 #pragma clang diagnostic pop
-
 CG_INLINE UIAlertController * _Nullable hx_showAlert(UIViewController * _Nullable vc,
                                           NSString * _Nullable title,
                                           NSString * _Nullable message,

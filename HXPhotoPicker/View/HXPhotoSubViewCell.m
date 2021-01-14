@@ -1,9 +1,9 @@
 //
 //  HXPhotoSubViewCell.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/17.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/17.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoSubViewCell.h"
@@ -13,14 +13,16 @@
 #import "HXPhotoBottomSelectView.h"
 #import "HXPhotoEdit.h"
 #import "UIColor+HXExtension.h"
+#import "HXAssetManager.h"
 
 @interface HXPhotoSubViewCell ()
 @property (strong, nonatomic) UIImageView *imageView;
 @property (strong, nonatomic) UIButton *deleteBtn;
 @property (strong, nonatomic) HXCircleProgressView *progressView;
-@property (assign, nonatomic) int32_t requestID;
+@property (assign, nonatomic) PHImageRequestID requestID;
 @property (strong, nonatomic) UILabel *stateLb;
 @property (strong, nonatomic) CAGradientLayer *bottomMaskLayer;
+@property (strong, nonatomic) UIView *bottomMaskView;
 @property (assign, nonatomic) BOOL addCustomViewCompletion;
 @property (strong, nonatomic) UIView *customView;
 @end
@@ -55,7 +57,6 @@
         _imageView = [[UIImageView alloc] init];
         _imageView.clipsToBounds = YES;
         _imageView.contentMode = UIViewContentModeScaleAspectFill;
-        [_imageView.layer addSublayer:self.bottomMaskLayer];
     }
     return _imageView;
 }
@@ -67,6 +68,13 @@
         _stateLb.font = [UIFont hx_mediumSFUITextOfSize:12];
     }
     return _stateLb;
+}
+- (UIView *)bottomMaskView {
+    if (!_bottomMaskView) {
+        _bottomMaskView = [[UIView alloc] init];
+        [_bottomMaskView.layer addSublayer:self.bottomMaskLayer];
+    }
+    return _bottomMaskView;
 }
 - (CAGradientLayer *)bottomMaskLayer {
     if (!_bottomMaskLayer) {
@@ -101,6 +109,7 @@
 }
 - (void)setup {
     [self.contentView addSubview:self.imageView];
+    [self.contentView addSubview:self.bottomMaskView];
     [self.contentView addSubview:self.stateLb];
     [self.contentView addSubview:self.deleteBtn];
     [self.contentView addSubview:self.progressView];
@@ -127,7 +136,7 @@
     }
     if (showAlert) {
         HXPhotoBottomViewModel *titleModel = [[HXPhotoBottomViewModel alloc] init];
-        titleModel.title = title;
+        titleModel.title = title ?: @"";
         titleModel.titleFont = [UIFont systemFontOfSize:13];
         titleModel.titleColor = [UIColor hx_colorWithHexStr:@"#666666"];
         titleModel.titleDarkColor = [UIColor hx_colorWithHexStr:@"#999999"];
@@ -227,69 +236,78 @@
         }
     }else {
         if (model.localIdentifier && !model.asset) {
-            PHFetchOptions *options = [[PHFetchOptions alloc] init];
-            model.asset = [[PHAsset fetchAssetsWithLocalIdentifiers:@[model.localIdentifier] options:options] firstObject];
+            model.asset = [HXAssetManager fetchAssetWithLocalIdentifier:model.localIdentifier];
         }
         self.deleteBtn.hidden = NO;
         if (model.networkPhotoUrl) {
-            HXWeakSelf
-            self.progressView.hidden = model.downloadComplete;
-            if (model.downloadComplete && !model.downloadError) {
-                if (model.previewPhoto.images.count) {
-                    self.imageView.image = nil;
-                    self.imageView.image = model.previewPhoto.images.firstObject;
-                }else {
-                    self.imageView.image = model.previewPhoto;
-                }
-            }else {
-                [self.imageView hx_setImageWithModel:model original:NO progress:^(CGFloat progress, HXPhotoModel *model) {
-                    if (weakSelf.model == model) {
-                        weakSelf.progressView.progress = progress;
-                    }
-                } completed:^(UIImage *image, NSError *error, HXPhotoModel *model) {
-                    if (weakSelf.model == model) {
-                        if (error != nil) {
-                            [weakSelf.progressView showError];
-                        }else {
-                            if (image) {
-                                weakSelf.progressView.progress = 1;
-                                weakSelf.progressView.hidden = YES;
-                                if (image.images.count) {
-                                    weakSelf.imageView.image = nil;
-                                    weakSelf.imageView.image = image.images.firstObject;
-                                }else {
-                                    weakSelf.imageView.image = image;
-                                }
-                            }
-                        }
-                    }
-                }];
-            }
-        }else {
             if (model.photoEdit) {
                 self.imageView.image = model.photoEdit.editPreviewImage;
             }else {
-                if (model.previewPhoto) {
+                HXWeakSelf
+                if (model.downloadComplete && !model.downloadError) {
                     if (model.previewPhoto.images.count) {
                         self.imageView.image = nil;
                         self.imageView.image = model.previewPhoto.images.firstObject;
                     }else {
                         self.imageView.image = model.previewPhoto;
                     }
-                }else if (model.thumbPhoto) {
-                    if (model.thumbPhoto.images.count) {
-                        self.imageView.image = nil;
-                        self.imageView.image = model.thumbPhoto.images.firstObject;
-                    }else {
-                        self.imageView.image = model.thumbPhoto;
-                    }
                 }else {
+                    self.progressView.hidden = NO;
+                    [self.imageView hx_setImageWithModel:model original:NO progress:^(CGFloat progress, HXPhotoModel *model) {
+                        if (weakSelf.model == model) {
+                            weakSelf.progressView.progress = progress;
+                        }
+                    } completed:^(UIImage *image, NSError *error, HXPhotoModel *model) {
+                        if (weakSelf.model == model) {
+                            if (error != nil) {
+                                [weakSelf.progressView showError];
+                            }else {
+                                if (image) {
+                                    weakSelf.progressView.progress = 1;
+                                    weakSelf.progressView.hidden = YES;
+                                    if (image.images.count) {
+                                        weakSelf.imageView.image = nil;
+                                        weakSelf.imageView.image = image.images.firstObject;
+                                    }else {
+                                        weakSelf.imageView.image = image;
+                                    }
+                                }
+                            }
+                        }
+                    }];
+                }
+            }
+        }else {
+            if (model.photoEdit) {
+                self.imageView.image = model.photoEdit.editPreviewImage;
+            }else {
+                if (model.asset) {
                     HXWeakSelf
-                    [self.model requestThumbImageWithSize:CGSizeMake(200, 200) completion:^(UIImage *image, HXPhotoModel *model, NSDictionary *info) {
+                    PHImageRequestID requestID = [self.model requestThumbImageWithWidth:250 completion:^(UIImage *image, HXPhotoModel *model, NSDictionary *info) {
                         if (weakSelf.model == model) {
                             weakSelf.imageView.image = image;
                         }
                     }];
+                    if (self.requestID != requestID) {
+                        [[PHImageManager defaultManager] cancelImageRequest:self.requestID];
+                    }
+                    self.requestID = requestID;
+                }else {
+                    if (model.previewPhoto) {
+                        if (model.previewPhoto.images.count) {
+                            self.imageView.image = nil;
+                            self.imageView.image = model.previewPhoto.images.firstObject;
+                        }else {
+                            self.imageView.image = model.previewPhoto;
+                        }
+                    }else if (model.thumbPhoto) {
+                        if (model.thumbPhoto.images.count) {
+                            self.imageView.image = nil;
+                            self.imageView.image = model.thumbPhoto.images.firstObject;
+                        }else {
+                            self.imageView.image = model.thumbPhoto;
+                        }
+                    }
                 }
             }
         }
@@ -301,40 +319,42 @@
     if (model.type == HXPhotoModelMediaTypePhotoGif && !model.photoEdit) {
         self.stateLb.text = @"GIF";
         self.stateLb.hidden = NO;
-        self.bottomMaskLayer.hidden = NO;
+        self.bottomMaskView.hidden = NO;
     }else if (model.type == HXPhotoModelMediaTypeLivePhoto && !model.photoEdit) {
         self.stateLb.text = @"Live";
         self.stateLb.hidden = NO;
-        self.bottomMaskLayer.hidden = NO;
+        self.bottomMaskView.hidden = NO;
     }else {
         if (model.subType == HXPhotoModelMediaSubTypeVideo) {
             self.stateLb.text = model.videoTime;
             self.stateLb.hidden = NO;
-            self.bottomMaskLayer.hidden = NO;
+            self.bottomMaskView.hidden = NO;
         }else {
             if ((model.cameraPhotoType == HXPhotoModelMediaTypeCameraPhotoTypeNetWorkGif ||
                  model.cameraPhotoType == HXPhotoModelMediaTypeCameraPhotoTypeLocalGif) && !model.photoEdit) {
                 self.stateLb.text = @"GIF";
                 self.stateLb.hidden = NO;
-                self.bottomMaskLayer.hidden = NO;
+                self.bottomMaskView.hidden = NO;
                 return;
             }else if ((model.cameraPhotoType == HXPhotoModelMediaTypeCameraPhotoTypeLocalLivePhoto ||
                        model.cameraPhotoType == HXPhotoModelMediaTypeCameraPhotoTypeNetWorkLivePhoto) &&
                       !model.photoEdit) {
                 self.stateLb.text = @"Live";
                 self.stateLb.hidden = NO;
-                self.bottomMaskLayer.hidden = NO;
+                self.bottomMaskView.hidden = NO;
                 return;
             }
             self.stateLb.hidden = YES;
-            self.bottomMaskLayer.hidden = YES;
+            self.bottomMaskView.hidden = YES;
         }
     }
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.index inSection:0];
     if ([self.customProtocol respondsToSelector:@selector(customView:indexPath:)]) {
         if (!self.addCustomViewCompletion) {
             UIView *customView = [self.customProtocol customView:self indexPath:indexPath];
-            [self.contentView addSubview:customView];
+            if (customView) {
+                [self.contentView addSubview:customView];
+            }
             self.customView = customView;
             self.addCustomViewCompletion = YES;
         }
@@ -346,7 +366,7 @@
         BOOL hiddenState = [self.customProtocol shouldHiddenBottomType:self indexPath:indexPath];
         if (hiddenState) {
             self.stateLb.hidden = hiddenState;
-            self.bottomMaskLayer.hidden = hiddenState;
+            self.bottomMaskView.hidden = hiddenState;
         }
     }
     if ([self.customProtocol respondsToSelector:@selector(customViewFrame:indexPath:)]) {
@@ -368,7 +388,8 @@
     self.imageView.frame = self.bounds;
     
     self.stateLb.frame = CGRectMake(0, self.hx_h - 18, self.hx_w - 4, 18);
-    self.bottomMaskLayer.frame = CGRectMake(0, self.hx_h - 25, self.hx_w, 25);
+    self.bottomMaskView.frame = CGRectMake(0, self.hx_h - 25, self.hx_w, 25);
+    self.bottomMaskLayer.frame = self.bottomMaskView.bounds;
 
     CGFloat width = self.frame.size.width;
     CGFloat height = self.frame.size.height;

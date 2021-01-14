@@ -1,9 +1,9 @@
 //
 //  HXPhotoViewFlowLayout.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/15.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/15.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoViewFlowLayout.h"
@@ -70,20 +70,20 @@
             CGFloat min = MIN(max, missingY);
             
             if (topY >= normalY && topY <= missingY + headerHeight) {
-                if (HX_IOS9Later) {
-                    HXPhotoViewSectionHeaderView *headerView = (HXPhotoViewSectionHeaderView *)[cv supplementaryViewForElementKind:UICollectionElementKindSectionHeader atIndexPath:layoutAttributes.indexPath];
-                    if (headerView) {
-                        headerView.changeState = YES;
-                    }
-                }
+//                if (HX_IOS9Later) {
+//                    HXPhotoViewSectionHeaderView *headerView = (HXPhotoViewSectionHeaderView *)[cv supplementaryViewForElementKind:UICollectionElementKindSectionHeader atIndexPath:layoutAttributes.indexPath];
+//                    if (headerView) {
+//                        headerView.changeState = YES;
+//                    }
+//                }
                 self.hasSuspension = YES;
             }else {
-                if (HX_IOS9Later) {
-                    HXPhotoViewSectionHeaderView *headerView = (HXPhotoViewSectionHeaderView *)[cv supplementaryViewForElementKind:UICollectionElementKindSectionHeader atIndexPath:layoutAttributes.indexPath];
-                    if (headerView) {
-                        headerView.changeState = NO;
-                    }
-                }
+//                if (HX_IOS9Later) {
+//                    HXPhotoViewSectionHeaderView *headerView = (HXPhotoViewSectionHeaderView *)[cv supplementaryViewForElementKind:UICollectionElementKindSectionHeader atIndexPath:layoutAttributes.indexPath];
+//                    if (headerView) {
+//                        headerView.changeState = NO;
+//                    }
+//                }
                 self.hasSuspension = NO;
             }
             if (origin.y != min && self.hasSuspension) {

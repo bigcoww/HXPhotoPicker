@@ -1,9 +1,9 @@
 //
 //  HXPreviewLivePhotoView.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2019/11/15.
-//  Copyright © 2019 洪欣. All rights reserved.
+//  Created by Silence on 2019/11/15.
+//  Copyright © 2019 Silence. All rights reserved.
 //
 
 #import "HXPreviewLivePhotoView.h"
@@ -98,8 +98,8 @@
             self.imageCurrentLength = 0;
             self.videoCurrentLength = 0;
             self.cacheVideo = [HXPhotoTools fileExistsAtVideoURL:model.livePhotoVideoURL];
-            HXWeakSelf
 #if HasSDWebImage
+            HXWeakSelf
             [[SDWebImageManager sharedManager].imageCache queryImageForKey:[[SDWebImageManager sharedManager] cacheKeyForURL:model.networkPhotoUrl] options:SDWebImageQueryMemoryData context:nil completion:^(UIImage * _Nullable image, NSData * _Nullable data, SDImageCacheType cacheType) {
                 if (image) {
                     weakSelf.cacheImage = YES;
@@ -110,6 +110,7 @@
                 [weakSelf getLivePhotoAssetLength];
             }];
 #elif HasYYKitOrWebImage
+            HXWeakSelf
             YYWebImageManager *manager = [YYWebImageManager sharedManager];
             [manager.cache getImageForKey:[manager cacheKeyForURL:model.networkPhotoUrl]  withType:YYImageCacheTypeAll withBlock:^(UIImage * _Nullable image, YYImageCacheType type) {
                 if (image) {
@@ -142,7 +143,9 @@
             weakSelf.downloadICloudAssetComplete();
         }
         weakSelf.livePhotoView.livePhoto = livePhoto;
-        [weakSelf.livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        if ([HXPhotoCommon photoCommon].livePhotoAutoPlay) {
+            [weakSelf.livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        }
     } failed:^(NSDictionary *info, HXPhotoModel *model) {
         if (weakSelf.model != model) return;
         weakSelf.progressView.hidden = YES;
@@ -158,6 +161,8 @@
         [imageURLRequest setHTTPMethod:@"HEAD"];
         NSHTTPURLResponse *imageResp = nil;
         NSError *imageErr = nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored"-Wdeprecated-declarations"
         [NSURLConnection sendSynchronousRequest:imageURLRequest returningResponse:&imageResp error:&imageErr];
         
         if (self.cacheImage) {
@@ -169,6 +174,7 @@
         NSHTTPURLResponse *videoResp = nil;
         NSError *videoErr = nil;
         [NSURLConnection sendSynchronousRequest:videoURLRequest returningResponse:&videoResp error:&videoErr];
+#pragma clang diagnostic pop
         if (!imageErr && !videoErr) {
             self.totalLength = videoResp.expectedContentLength + imageResp.expectedContentLength;
         }
@@ -279,7 +285,9 @@
         }
         [weakSelf.livePhotoView stopPlayback];
         weakSelf.livePhotoView.livePhoto = livePhoto;
-        [weakSelf.livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        if ([HXPhotoCommon photoCommon].livePhotoAutoPlay) {
+            [weakSelf.livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        }
     }];
 }
 - (void)cancelLivePhoto {
@@ -322,8 +330,8 @@
         self.progressView.hidden = YES;
         self.progressView.progress = 0;
         if (_livePhotoView.livePhoto) {
-            self.livePhotoView.livePhoto = nil;
             [self stopLivePhoto];
+            self.livePhotoView.livePhoto = nil;
         }
     }
     self.stopCancel = NO;
@@ -344,7 +352,9 @@
 }
 - (void)livePhotoView:(PHLivePhotoView *)livePhotoView didEndPlaybackWithStyle:(PHLivePhotoViewPlaybackStyle)playbackStyle {
     if (livePhotoView == _livePhotoView) {
-        [livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        if ([HXPhotoCommon photoCommon].livePhotoAutoPlay) {
+            [livePhotoView startPlaybackWithStyle:PHLivePhotoViewPlaybackStyleFull];
+        }
     }
 //    [self stopLivePhoto];
 }

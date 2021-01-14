@@ -2,8 +2,8 @@
 //  HXPhotoEdit.h
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/7/1.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/1.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -23,6 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSDictionary *editData;
 
 - (instancetype)initWithEditImage:(UIImage *)image previewImage:(UIImage *)previewImage data:(NSDictionary *)data;
+
+- (void)clearData;
 @end
 
 NS_ASSUME_NONNULL_END

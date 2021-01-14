@@ -1,9 +1,9 @@
 //
 //  HXCustomNavigationController.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/10/31.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/10/31.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -47,6 +47,8 @@
 @property (copy, nonatomic) void (^requestCameraRollCompletion)(void);
 @property (copy, nonatomic) void (^requestAllAlbumCompletion)(void);
 
+@property (copy, nonatomic) void (^ reloadAsset)(BOOL initialAuthorization);
+
 //@property (copy, nonatomic) void (^ photoLibraryDidChange)(HXAlbumModel *albumModel);
 
 @property (assign ,nonatomic) BOOL isCamera;
@@ -65,4 +67,6 @@
                        delegate:(id<HXCustomNavigationControllerDelegate>)delegate
                       doneBlock:(viewControllerDidDoneBlock)doneBlock
                     cancelBlock:(viewControllerDidCancelBlock)cancelBlock;
+
+- (void)clearAssetCache;
 @end

@@ -1,9 +1,9 @@
 //
 //  HXPhotoViewController.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/10/14.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/10/14.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -78,6 +78,7 @@ HXCustomCameraController;
 @property (weak, nonatomic) id<HXPhotoViewCellDelegate> delegate;
 @property (assign, nonatomic) NSInteger section;
 @property (assign, nonatomic) NSInteger item;
+@property (assign, nonatomic) BOOL canSelect;
 @property (strong, nonatomic, readonly) UIImageView *imageView;
 @property (strong, nonatomic) CALayer *selectMaskLayer;
 @property (strong, nonatomic) HXPhotoModel *model;
@@ -86,12 +87,14 @@ HXCustomCameraController;
 @property (strong, nonatomic) UIColor *selectedTitleColor;
 @property (strong, nonatomic) UIColor *darkSelectBgColor;
 @property (strong, nonatomic) UIColor *darkSelectedTitleColor;
+@property (strong, nonatomic, readonly) CALayer *videoMaskLayer;
+@property (strong, nonatomic, readonly) UIButton *selectBtn;
 - (void)resetNetworkImage;
 - (void)cancelRequest;
 - (void)startRequestICloudAsset;
 - (void)bottomViewPrepareAnimation;
 - (void)bottomViewStartAnimation;
-- (void)setModel:(HXPhotoModel *)model clearImage:(BOOL)clearImage;
+- (void)setModel:(HXPhotoModel *)model emptyImage:(BOOL)emptyImage;
 - (void)setModelDataWithHighQuality:(BOOL)highQuality completion:(void (^)(HXPhotoViewCell *myCell))completion;
 @end
 
@@ -101,16 +104,9 @@ HXCustomCameraController;
 @property (strong, nonatomic) UIImage *cameraImage;
 @property (assign, nonatomic) BOOL cameraSelected;
 @property (assign, nonatomic) BOOL startSession;
+@property (strong, nonatomic) UIColor *bgColor;
 - (void)starRunning;
 - (void)stopRunning;
-@end
-
-@interface HXPhotoViewSectionHeaderView : HXCustomCollectionReusableView
-@property (strong, nonatomic) HXPhotoDateModel *model;
-@property (assign, nonatomic) BOOL changeState;
-@property (assign, nonatomic) BOOL translucent;
-@property (strong, nonatomic) UIColor *suspensionBgColor;
-@property (strong, nonatomic) UIColor *suspensionTitleColor;
 @end
 
 @interface HXPhotoViewSectionFooterView : UICollectionReusableView

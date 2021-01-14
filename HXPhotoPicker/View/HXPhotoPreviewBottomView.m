@@ -1,9 +1,9 @@
 //
 //  HXPhotoPreviewBottomView.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/10/16.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/10/16.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoPreviewBottomView.h"
@@ -87,13 +87,13 @@
         }
     }
     if (model.subType == HXPhotoModelMediaSubTypeVideo && !tipText) {
-        if (model.videoDuration >= self.manager.configuration.videoMaximumSelectDuration + 1) {
+        if (round(model.videoDuration) >= self.manager.configuration.videoMaximumSelectDuration + 1) {
             if (self.manager.configuration.videoCanEdit) {
                 tipText = [NSString stringWithFormat:[NSBundle hx_localizedStringForKey:@"只能选择%ld秒内的视频，需进行编辑"], self.manager.configuration.videoMaximumSelectDuration];
             }else {
                 tipText = [NSString stringWithFormat:[NSBundle hx_localizedStringForKey:@"视频大于%ld秒，无法选择"], self.manager.configuration.videoMaximumSelectDuration];
             }
-        }else if (model.videoDuration < self.manager.configuration.videoMinimumSelectDuration) {
+        }else if (round(model.videoDuration) < self.manager.configuration.videoMinimumSelectDuration) {
             tipText = [NSString stringWithFormat:[NSBundle hx_localizedStringForKey:@"视频少于%ld秒，无法选择"], self.manager.configuration.videoMinimumSelectDuration];
         }
     }
@@ -165,7 +165,7 @@
 }
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     HXPhotoPreviewBottomViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"DatePreviewBottomViewCellId" forIndexPath:indexPath];
-    cell.selectColor = self.manager.configuration.themeColor;
+    cell.selectColor = self.manager.configuration.previewBottomSelectColor ? : self.manager.configuration.themeColor;
     HXPhotoModel *model = self.modelArray[indexPath.item];
     cell.model = model;
     return cell;
@@ -382,7 +382,7 @@
 
             UIColor *themeColor = [HXPhotoCommon photoCommon].isDark ? [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1] : self.selectColor;
 
-            self.layer.borderColor = self.selected ? [themeColor colorWithAlphaComponent:0.5].CGColor : nil;
+            self.layer.borderColor = self.selected ? [themeColor colorWithAlphaComponent:0.75].CGColor : nil;
             
         }
     }
@@ -433,7 +433,7 @@
         }
     }
     self.layer.borderWidth = self.selected ? 5 : 0;
-    self.layer.borderColor = self.selected ? [([HXPhotoCommon photoCommon].isDark ? [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1] : self.selectColor) colorWithAlphaComponent:0.5].CGColor : nil;
+    self.layer.borderColor = self.selected ? [([HXPhotoCommon photoCommon].isDark ? [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1] : self.selectColor) colorWithAlphaComponent:0.75].CGColor : nil;
 }
 - (void)layoutSubviews {
     [super layoutSubviews];
@@ -470,13 +470,13 @@
         if ([HXPhotoCommon photoCommon].isDark) {
             selectColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1];
         }
-        self.layer.borderColor = self.selected ? [selectColor colorWithAlphaComponent:0.5].CGColor : nil;
+        self.layer.borderColor = self.selected ? [selectColor colorWithAlphaComponent:0.75].CGColor : nil;
     }
 }
 - (void)setSelected:(BOOL)selected {
     [super setSelected:selected];
     self.layer.borderWidth = selected ? 5 : 0;
-    self.layer.borderColor = selected ? [([HXPhotoCommon photoCommon].isDark ? [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1] : self.selectColor) colorWithAlphaComponent:0.5].CGColor : nil;
+    self.layer.borderColor = selected ? [([HXPhotoCommon photoCommon].isDark ? [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1] : self.selectColor) colorWithAlphaComponent:0.75].CGColor : nil;
 }
 - (void)cancelRequest {
     if (self.requestID) {

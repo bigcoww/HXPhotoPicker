@@ -1,9 +1,9 @@
 //
 //  HXPhotoBottomSelectView.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2019/9/30.
-//  Copyright © 2019 洪欣. All rights reserved.
+//  Created by Silence on 2019/9/30.
+//  Copyright © 2019 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -61,11 +61,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (copy, nonatomic) void (^ cancelClick)(void);
 
 /// 如果单独设置tableViewHeaderView，设置之后需要调用 recalculateHeight 方法重新计算高度
-@property (strong, nonatomic) UIView *tableHeaderView;
+@property (strong, nonatomic, nullable) UIView *tableHeaderView;
 /// 是否自适应暗黑模式
 @property (assign, nonatomic) BOOL adaptiveDarkness;
 /// 取消按钮的文字
-@property (copy, nonatomic) NSString *cancelTitle;
+@property (copy, nonatomic, nullable) NSString *cancelTitle;
 /// 是否显示顶部横条视图，显示可拖动隐藏视图
 @property (assign, nonatomic) BOOL showTopLineView;
 

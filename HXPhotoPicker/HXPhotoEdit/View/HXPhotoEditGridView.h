@@ -2,8 +2,8 @@
 //  HXPhotoEditGridView.h
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/29.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/29.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -52,11 +52,14 @@ typedef NS_ENUM(NSUInteger, HXPhotoEditGridViewAspectRatioType) {
 @property (assign, nonatomic) CGSize customRatioSize;
 - (void)setAspectRatio:(HXPhotoEditGridViewAspectRatioType)aspectRatio animated:(BOOL)animated;
 
+- (void)setupAspectRatio:(HXPhotoEditGridViewAspectRatioType)aspectRatio;
+
 @property (nonatomic, weak) id<HXPhotoEditGridViewDelegate> delegate;
 /** 遮罩颜色 */
 @property (nonatomic, assign) CGColorRef maskColor;
 @property (nonatomic, weak, readonly) HXPhotoEditGridLayer *gridLayer;
 
+@property (nonatomic, assign) BOOL isRound;
 /** 长宽比例描述 */
 - (NSArray <NSString *>*)aspectRatioDescs;
 

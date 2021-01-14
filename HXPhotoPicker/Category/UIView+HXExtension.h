@@ -1,9 +1,9 @@
 //
 //  UIView+HXExtension.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/16.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/16.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -35,6 +35,8 @@
 - (void)hx_handleLoading:(BOOL)animation;
 - (void)hx_handleLoading:(BOOL)animation duration:(NSTimeInterval)duration;
 - (void)hx_handleImageWithDelay:(NSTimeInterval)delay;
+- (void)hx_handleImageWithAnimation:(BOOL)animation;
+- (void)hx_handleGraceTimer;
 
 /* <HXAlbumListViewControllerDelegate> */
 - (void)hx_presentAlbumListViewControllerWithManager:(HXPhotoManager *)manager delegate:(id)delegate DEPRECATED_MSG_ATTRIBUTE("Use UIViewController+HXEXtension 'hx_presentSelectPhotoControllerWithManager:' instead");

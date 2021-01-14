@@ -1,9 +1,9 @@
 //
 //  UIViewController+HXExtension.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/24.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/24.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -53,6 +53,16 @@
                                        currentIndex:(NSUInteger)currentIndex
                                           photoView:(HXPhotoView * _Nullable)photoView;
 
+- (void)hx_presentPreviewPhotoControllerWithManager:(HXPhotoManager *)manager
+                                       previewStyle:(HXPhotoViewPreViewShowStyle)previewStyle
+                              showBottomPageControl:(BOOL)showBottomPageControl
+                                       currentIndex:(NSUInteger)currentIndex;
+
+- (void)hx_presentPreviewPhotoControllerWithManager:(HXPhotoManager *)manager
+                                       previewStyle:(HXPhotoViewPreViewShowStyle)previewStyle
+                              showBottomPageControl:(BOOL)showBottomPageControl
+                                       currentIndex:(NSUInteger)currentIndex
+                                          photoView:(HXPhotoView * _Nullable)photoView;
 
 /// 跳转相机界面
 /// @param manager 照片管理者

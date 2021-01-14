@@ -1,9 +1,9 @@
 //
 //  HXPhotoConfiguration.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/21.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/21.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -22,6 +22,16 @@ HXPhotoPreviewViewController;
 /// 配置类型
 /// 一键配置UI和选择逻辑
 @property (assign, nonatomic) HXConfigurationType type;
+
+/// 查看LivePhoto是否自动播放，为NO时需要长按才可播放
+@property (assign, nonatomic) BOOL livePhotoAutoPlay;
+
+/// 预览大图时允许不先加载小图，直接加载原图
+@property (assign, nonatomic) BOOL allowPreviewDirectLoadOriginalImage;
+
+/// 允许滑动的方式选择资源 - 默认允许
+/// 类似系统相册和QQ滑动选择逻辑
+@property (assign, nonatomic) BOOL allowSlidingSelection;
 
 /// 照片列表取消按钮的位置
 /// 只在 albumShowMode = HXPhotoAlbumShowModePopup 时有效
@@ -101,6 +111,11 @@ HXPhotoPreviewViewController;
 /// 如果资源为视频 thumbPhoto 和 previewPhoto 就是视频封面
 /// model.videoURL 为视频地址
 @property (assign, nonatomic) BOOL requestImageAfterFinishingSelection;
+
+/// 当原图按钮隐藏时获取地址时是否请求原图
+/// 为YES时 requestImageAfterFinishingSelection 获取的原图
+/// 为NO时 requestImageAfterFinishingSelection 获取的不是原图
+@property (assign, nonatomic) BOOL requestOriginalImage;
 
 /// 当 requestImageAfterFinishingSelection = YES 并且选中的原图，导出的视频是否为最高质量
 /// 如果视频很大的话，导出高质量会很耗时
@@ -258,6 +273,15 @@ HXPhotoPreviewViewController;
 @property (copy, nonatomic) void (^useCameraComplete)(HXPhotoModel *model);
 
 #pragma mark - < UI相关 >
+
+/// 照片列表上相机cell上的相机未预览时的图标
+@property (copy, nonatomic) NSString *photoListTakePhotoNormalImageNamed;
+
+/// 照片列表上相机cell上的相机还是预览时的图标
+@property (copy, nonatomic) NSString *photoListTakePhotoSelectImageNamed;
+
+/// 照片列表上相机cell的背景颜色
+@property (strong, nonatomic) UIColor *photoListTakePhotoBgColor;
 
 /// 未授权时界面上提示文字显示的颜色
 @property (strong, nonatomic) UIColor *authorizationTipColor;
@@ -436,15 +460,11 @@ HXPhotoPreviewViewController;
 /// 相册列表cell底部线颜色
 @property (strong, nonatomic) UIColor *albumListViewCellLineColor;
 
-/**
- headerSection 半透明毛玻璃效果  默认YES  ios9以上才有效果
- */
-@property (assign, nonatomic) BOOL sectionHeaderTranslucent;
+/// 3.0.3之后的版本已移除此功能
+@property (assign, nonatomic) BOOL sectionHeaderTranslucent DEPRECATED_MSG_ATTRIBUTE("Invalid attribute");
 
-/**
- 导航栏标题颜色是否与主题色同步  默认NO;
- - 同步会过滤掉手动设置的导航栏标题颜色
- */
+/// 导航栏标题颜色是否与主题色同步  默认NO
+/// 同步会过滤掉手动设置的导航栏标题颜色
 @property (assign, nonatomic) BOOL navigationTitleSynchColor;
 
 /// 底部视图的背景颜色
@@ -471,31 +491,28 @@ HXPhotoPreviewViewController;
 /// 主题颜色  默认 tintColor
 @property (strong, nonatomic) UIColor *themeColor;
 
+/// 预览界面底部已选照片的选中颜色
+@property (strong, nonatomic) UIColor *previewBottomSelectColor;
+
 /// 是否可以改变原图按钮的tinColor
 @property (assign, nonatomic) BOOL changeOriginalTinColor;
 
-/**
- 原图按钮普通状态下的按钮图标名
- - 改变主题颜色后建议也改下原图按钮的图标
- */
+/// 原图按钮普通状态下的按钮图标名
+/// 改变主题颜色后建议也改下原图按钮的图标
 @property (copy, nonatomic) NSString *originalNormalImageName;
 
 /// 原图按钮图片的tintColor,设置这个颜色可改变图片的颜色
 @property (strong, nonatomic) UIColor *originalBtnImageTintColor;
 
-/**
- 原图按钮选中状态下的按钮图标名
- - 改变主题颜色后建议也改下原图按钮的图标
- */
+/// 原图按钮选中状态下的按钮图标名
+/// 改变主题颜色后建议也改下原图按钮的图标
 @property (copy, nonatomic) NSString *originalSelectedImageName;
 
-/**
- 是否隐藏原图按钮  默认 NO
- */
+/// 是否隐藏原图按钮 默认 NO
 @property (assign, nonatomic) BOOL hideOriginalBtn;
 
 /// sectionHeader 是否显示照片的位置信息
-/// 3.0.3之后的版本已去掉此功能
+/// 3.0.3之后的版本已移除此功能
 @property (assign, nonatomic) BOOL sectionHeaderShowPhotoLocation DEPRECATED_MSG_ATTRIBUTE("Invalid attribute");
 
 /**
@@ -576,6 +593,11 @@ HXPhotoPreviewViewController;
 @property (assign, nonatomic) NSTimeInterval videoMaximumDuration;
 
 /**
+ 相机视频录制最小秒数  -  默认3s
+ */
+@property (assign, nonatomic) NSTimeInterval videoMinimumDuration;
+
+/**
  *  删除临时的照片/视频 -
  注:相机拍摄的照片并没有保存到系统相册 或 是本地图片
  如果当这样的照片都没有被选中时会清空这些照片 有一张选中了就不会删..
@@ -589,7 +611,7 @@ HXPhotoPreviewViewController;
  */
 @property (assign, nonatomic) BOOL saveSystemAblum;
 
-/// 拍摄的照片/视频保存到指定相册的名称  默认 BundleName
+/// 拍摄的照片/视频保存到指定相册的名称  默认 DisplayName
 /// 需9.0以上系统才可以保存到自定义相册 , 以下的系统只保存到相机胶卷...
 @property (copy, nonatomic) NSString *customAlbumName;
 
@@ -617,7 +639,7 @@ HXPhotoPreviewViewController;
 /// 3.0.3 之后的版本已无效
 @property (assign, nonatomic) BOOL filtrationICloudAsset DEPRECATED_MSG_ATTRIBUTE("Invalid attribute");
 
-/// 小图照片清晰度 越大越清晰、越消耗性能
+/// 列表小图照片清晰度 越大越清晰、越消耗性能
 /// 设置太大的话获取图片资源时耗时长且内存消耗大可能会引起界面卡顿
 @property (assign, nonatomic) CGFloat clarityScale;
 

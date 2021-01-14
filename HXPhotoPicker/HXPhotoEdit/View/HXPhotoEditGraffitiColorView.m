@@ -2,8 +2,8 @@
 //  HXPhotoEditGraffitiColorView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/20.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/20.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditGraffitiColorView.h"
@@ -32,9 +32,9 @@
     self.flowLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
     self.flowLayout.sectionInset = UIEdgeInsetsMake(0, 15, 0, 0);
     self.flowLayout.minimumInteritemSpacing = 5;
-    self.flowLayout.itemSize = CGSizeMake(35.f, 35.f);
+    self.flowLayout.itemSize = CGSizeMake(37.f, 37.f);
     
-    [self.repealBtn setImage:[UIImage hx_imageNamed:@"hx_photo_edit_repeal"] forState:UIControlStateNormal];
+    [self.repealBtn setImage:[UIImage hx_imageContentsOfFile:@"hx_photo_edit_repeal"] forState:UIControlStateNormal];
     
     self.collectionView.dataSource = self;
     self.collectionView.delegate = self;
@@ -51,7 +51,7 @@
         HXPhotoEditGraffitiColorModel *model = [[HXPhotoEditGraffitiColorModel alloc] init];
         model.color = color;
         [self.colorModels addObject:model];
-        if (self.colorModels.count == 1) {
+        if (self.colorModels.count == self.defaultDarwColorIndex + 1) {
             model.selected = YES;
             self.currentSelectModel = model;
         }

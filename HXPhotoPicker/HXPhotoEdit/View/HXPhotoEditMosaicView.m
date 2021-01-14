@@ -2,8 +2,8 @@
 //  HXPhotoEditMosaicView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/22.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/22.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditMosaicView.h"
@@ -27,15 +27,15 @@
     [super awakeFromNib];
     self.undoBtn.enabled = NO;
     
-    UIImage *normalImage = [[UIImage hx_imageNamed:@"hx_photo_edit_mosaic_normal"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    UIImage *normalImage = [[UIImage hx_imageContentsOfFile:@"hx_photo_edit_mosaic_normal"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     [self.normalBtn setImage:normalImage forState:UIControlStateNormal];
     [self.normalBtn setImage:normalImage forState:UIControlStateSelected];
     
-    UIImage *colorImage = [[UIImage hx_imageNamed:@"hx_photo_edit_mosaic_color"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    UIImage *colorImage = [[UIImage hx_imageContentsOfFile:@"hx_photo_edit_mosaic_color"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     [self.colorBtn setImage:colorImage forState:UIControlStateNormal];
     [self.colorBtn setImage:colorImage forState:UIControlStateSelected];
     
-    [self.undoBtn setImage:[UIImage hx_imageNamed:@"hx_photo_edit_repeal"] forState:UIControlStateNormal];
+    [self.undoBtn setImage:[UIImage hx_imageContentsOfFile:@"hx_photo_edit_repeal"] forState:UIControlStateNormal];
 }
 - (void)setThemeColor:(UIColor *)themeColor {
     _themeColor = themeColor;

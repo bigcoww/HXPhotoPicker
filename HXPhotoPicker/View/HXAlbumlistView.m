@@ -1,9 +1,9 @@
 //
 //  HXAlbumlistView.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2018/9/26.
-//  Copyright © 2018年 洪欣. All rights reserved.
+//  Created by Silence on 2018/9/26.
+//  Copyright © 2018年 Silence. All rights reserved.
 //
 
 #import "HXAlbumlistView.h"
@@ -12,6 +12,7 @@
 #import "UIButton+HXExtension.h"
 #import "UIView+HXExtension.h"
 #import "UIColor+HXExtension.h"
+#import "HXAssetManager.h"
 
 @interface HXAlbumlistView ()<UITableViewDataSource, UITableViewDelegate>
 @property (assign, nonatomic) BOOL cellCanSetModel;
@@ -42,11 +43,12 @@
 }
 - (void)setAlbumModelArray:(NSMutableArray *)albumModelArray {
     _albumModelArray = albumModelArray;
-//    [self.tableView reloadData];
     self.currentSelectModel = albumModelArray.firstObject;
-//    [self refreshCamearCount];
 }
 - (void)selectCellScrollToCenter {
+    if (!self.currentSelectModel) {
+        return;
+    }
     if (self.albumModelArray.count <= self.currentSelectModel.index) {
         return;
     }
@@ -56,13 +58,10 @@
     if (!self.albumModelArray.count) {
         return;;
     }
-    NSInteger i = 0;
-    for (HXAlbumModel *albumMd in self.albumModelArray) {
-        albumMd.cameraCount = [self.manager cameraCount];
-        if (i == 0 && !albumMd.assetResult && !albumMd.localIdentifier) {
-            albumMd.tempImage = [self.manager firstCameraModel].thumbPhoto;
-        }
-        i++;
+    HXAlbumModel *albumMd = self.albumModelArray.firstObject;
+    albumMd.cameraCount = self.manager.cameraCount;
+    if (!albumMd.assetResult && !albumMd.localIdentifier) {
+        albumMd.tempImage = [self.manager firstCameraModel].thumbPhoto;
     }
     self.cellCanSetModel = NO;
     [self.tableView reloadData];
@@ -82,46 +81,43 @@
         [self cellSetModelData:self.tableVisibleCells.firstObject];
     });
 }
-
+- (void)reloadAlbumAssetCountWithAlbumModel:(HXAlbumModel *)model {
+    if (!model || !self.albumModelArray.count) {
+        return;
+    }
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:model.index inSection:0];
+    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:0];
+    [self.tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+}
 - (void)cellSetModelData:(HXAlbumlistViewCell *)cell {
     if ([cell isKindOfClass:[HXAlbumlistViewCell class]]) {
         HXWeakSelf
         [cell setAlbumImageWithCompletion:^(NSInteger count, HXAlbumlistViewCell *myCell) {
-            if (count <= 0) {
+            if (count <= 0 && cell.model.index > 0) {
                 if ([weakSelf.albumModelArray containsObject:myCell.model]) {
                     [weakSelf.albumModelArray removeObject:myCell.model];
                     [weakSelf.deleteCellArray addObject:[weakSelf.tableView indexPathForCell:myCell]];
                 }
             }
-            NSInteger cellCount = weakSelf.tableVisibleCells.count;
-            NSInteger index = [weakSelf.tableVisibleCells indexOfObject:myCell];
-            if (index < cellCount - 1) {
-                [weakSelf cellSetModelData:weakSelf.tableVisibleCells[index + 1]];
-            }else {
-                // 可见cell已全部设置
-                weakSelf.cellCanSetModel = YES;
-                weakSelf.tableVisibleCells = nil;
-                if (weakSelf.deleteCellArray.count) {
-                    [weakSelf.tableView deleteRowsAtIndexPaths:weakSelf.deleteCellArray withRowAnimation:UITableViewRowAnimationFade];
-                }
-                [weakSelf.deleteCellArray removeAllObjects];
-                weakSelf.deleteCellArray = nil;
-            }
+            [weakSelf setCellModel:myCell];
         }];
     }else {
-        NSInteger count = self.tableVisibleCells.count;
-        NSInteger index = [self.tableVisibleCells indexOfObject:cell];
-        if (index < count - 1) {
-            [self cellSetModelData:self.tableVisibleCells[index + 1]];
-        }else {
-            self.cellCanSetModel = YES;
-            self.tableVisibleCells = nil;
-            if (self.deleteCellArray.count) {
-                [self.tableView deleteRowsAtIndexPaths:self.deleteCellArray withRowAnimation:UITableViewRowAnimationFade];
-            }
-            [self.deleteCellArray removeAllObjects];
-            self.deleteCellArray = nil;
+        [self setCellModel:cell];
+    }
+}
+- (void)setCellModel:(HXAlbumlistViewCell *)cell {
+    NSInteger count = self.tableVisibleCells.count;
+    NSInteger index = [self.tableVisibleCells indexOfObject:cell];
+    if (index < count - 1) {
+        [self cellSetModelData:self.tableVisibleCells[index + 1]];
+    }else {
+        self.cellCanSetModel = YES;
+        self.tableVisibleCells = nil;
+        if (self.deleteCellArray.count) {
+            [self.tableView deleteRowsAtIndexPaths:self.deleteCellArray withRowAnimation:UITableViewRowAnimationFade];
         }
+        [self.deleteCellArray removeAllObjects];
+        self.deleteCellArray = nil;
     }
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -263,18 +259,24 @@
     }
 }
 - (void)getAlbumImageWithCompletion:(void (^)(UIImage *image, PHAsset *asset))completion {
-    NSInteger photoCount = self.model.count;
-
-    self.countLb.text = @(photoCount + self.model.cameraCount).stringValue;
+    NSInteger photoCount = self.model.count + self.model.cameraCount;
+    PHAsset *coverAsset = self.model.assetResult.lastObject;
+    if (self.model.needReloadCount && photoCount != self.model.realCount) {
+        coverAsset = self.model.realCoverAsset;
+        photoCount = self.model.realCount;
+    }
+    self.countLb.text = @(photoCount).stringValue;
     HXWeakSelf
-    self.requestId = [HXPhotoModel requestThumbImageWithPHAsset:self.model.assetResult.lastObject size:CGSizeMake(self.hx_h * 1.4, self.hx_h * 1.4) completion:^(UIImage *image, PHAsset *asset) {
-        if (asset == weakSelf.model.assetResult.lastObject) {
-            weakSelf.coverView.image = image;
-        }
-        if (completion) {
-            completion(image, asset);
-        }
-    }]; 
+    if (coverAsset) {
+        self.requestId = [HXAssetManager requestThumbnailImageForAsset:coverAsset targetWidth:self.hx_h * 1.4 completion:^(UIImage * _Nonnull result, NSDictionary<NSString *,id> * _Nonnull info) {
+            if (weakSelf.model.assetResult.lastObject == coverAsset && result) {
+                weakSelf.coverView.image = result;
+            }
+            if (completion && result) {
+                completion(result, coverAsset);
+            }
+        }];
+    }
 }
 - (void)setConfiguration:(HXPhotoConfiguration *)configuration {
     _configuration = configuration;
@@ -424,15 +426,18 @@
 - (instancetype)initWithManager:(HXPhotoManager *)manager {
     self = [super init];
     if (self) {
+        self.canSelect = NO;
         self.manager = manager;
         [self addSubview:self.contentView];
         [self addSubview:self.button];
-        [self changeColor];
-        if (self.manager.configuration.type == HXConfigurationTypeWXChat ||
-            self.manager.configuration.type == HXConfigurationTypeWXMoment) {
-            self.contentView.backgroundColor = [[UIColor grayColor] colorWithAlphaComponent:0.3];
-            [self.contentView hx_radiusWithRadius:15 corner:UIRectCornerAllCorners];
+        if (HX_IOS11_Later) {
+            if (self.manager.configuration.type == HXConfigurationTypeWXChat ||
+                self.manager.configuration.type == HXConfigurationTypeWXMoment) {
+                self.contentView.backgroundColor = [[UIColor grayColor] colorWithAlphaComponent:0.3];
+                [self.contentView hx_radiusWithRadius:15 corner:UIRectCornerAllCorners];
+            }
         }
+        [self changeColor];
         self.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width - 120, 30);
         self.contentView.hx_h = 30;
         self.titleLb.hx_centerY = self.hx_h / 2;
@@ -468,7 +473,7 @@
 }
 - (void)setModel:(HXAlbumModel *)model {
     _model = model;
-    CGFloat maxWidth = [UIScreen mainScreen].bounds.size.width - 140 - 10 - 5 - self.arrowIcon.hx_w - (30 - self.arrowIcon.hx_h) / 2;
+    CGFloat maxWidth = [self getTextWidth:140];
     self.titleLb.text = model.albumName ?: [NSBundle hx_localizedStringForKey:@"相册"];
     CGFloat textWidth = self.titleLb.hx_getTextWidth;
     if (textWidth > maxWidth) {
@@ -479,30 +484,63 @@
         [self setTitleFrame];
     }];
 }
-- (void)setTitleFrame {
+- (CGFloat)getTextWidth:(CGFloat)margin {
+    CGFloat maxWidth = [UIScreen mainScreen].bounds.size.width - margin - 10 - 5 - self.arrowIcon.hx_w - (30 - self.arrowIcon.hx_h) / 2;
+//    CGFloat textWidth = self.titleLb.hx_getTextWidth;
+//    if (textWidth > maxWidth) {
+//        textWidth = maxWidth;
+//    }
+    return maxWidth;
+}
+- (void)setSubViewFrame {
     CGFloat width = self.titleLb.hx_w + 5 + self.arrowIcon.hx_w + 10 + (30 - self.arrowIcon.hx_h) / 2;
     self.titleLb.hx_x = 10;
     self.arrowIcon.hx_x = CGRectGetMaxX(self.titleLb.frame) + 5;
     self.contentView.hx_w = width;
     self.contentView.hx_centerX = self.hx_w / 2;
 }
+- (void)setTitleFrame {
+    [self setSubViewFrame];
+    if (self.superview) {
+        if ([self.superview isKindOfClass:NSClassFromString(@"_UITAMICAdaptorView")]) {
+            [self setupContentViewFrame];
+        }
+    }
+}
 - (BOOL)selected {
     return self.button.selected;
 }
-//- (void)setupAlpha:(BOOL)anima {
-//    if (anima) {
-//        [UIView animateWithDuration:0.1 animations:^{
-//            self.titleLb.alpha = 1;
-//            self.arrowIcon.alpha = 1;
-//        }];
-//    }else {
-//        self.titleLb.alpha = 1;
-//        self.arrowIcon.alpha = 1;
-//    }
-//}
+- (void)setupContentViewFrame {
+    BOOL canSet = self.superview && [self.superview isKindOfClass:NSClassFromString(@"_UITAMICAdaptorView")];
+    if (canSet) {
+        // 让按钮在屏幕中间
+        CGFloat temp_x = self.superview.hx_x + self.contentView.hx_x;
+        CGFloat windowWidth = [UIApplication sharedApplication].keyWindow.hx_w;
+        CGFloat w_x = (windowWidth - self.contentView.hx_w) / 2;
+        if (temp_x > w_x) {
+            CGFloat difference = temp_x - w_x;
+            if (self.contentView.hx_x - difference >= 0) {
+                self.contentView.hx_x -= difference;
+            }else {
+                self.contentView.hx_x = 0;
+            }
+        }else {
+            CGFloat difference = w_x - temp_x;
+            self.contentView.hx_x += difference;
+        }
+    }
+}
 - (void)layoutSubviews {
     [super layoutSubviews];
     self.button.frame = self.bounds;
+    [self setupContentViewFrame];
+    if (HX_IOS11_Earlier) {
+        if (self.manager.configuration.type == HXConfigurationTypeWXChat ||
+            self.manager.configuration.type == HXConfigurationTypeWXMoment) {
+            self.contentView.backgroundColor = [[UIColor grayColor] colorWithAlphaComponent:0.3];
+            [self.contentView hx_radiusWithRadius:15 corner:UIRectCornerAllCorners];
+        }
+    }
 }
 - (UIView *)contentView {
     if (!_contentView) {
@@ -571,6 +609,12 @@
     return _button;
 } 
 - (void)didBtnClick:(UIButton *)button {
+    if (!self.canSelect) {
+        return;
+    }
+    if (!self.model) {
+        return;
+    }
     button.selected = !button.isSelected;
     button.userInteractionEnabled = NO;
     if (button.selected) {

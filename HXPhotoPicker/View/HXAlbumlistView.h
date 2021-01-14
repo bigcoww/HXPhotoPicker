@@ -1,9 +1,9 @@
 //
 //  HXAlbumlistView.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2018/9/26.
-//  Copyright © 2018年 洪欣. All rights reserved.
+//  Created by Silence on 2018/9/26.
+//  Copyright © 2018年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -17,6 +17,7 @@
 @property (copy, nonatomic) void (^didSelectRowBlock)(HXAlbumModel *model);
 - (instancetype)initWithManager:(HXPhotoManager *)manager;
 - (void)refreshCamearCount;
+- (void)reloadAlbumAssetCountWithAlbumModel:(HXAlbumModel *)model;
 - (void)selectCellScrollToCenter;
 @end
 
@@ -31,10 +32,10 @@
 @property (weak, nonatomic) HXPhotoManager *manager;
 @property (strong, nonatomic) HXAlbumModel *model;
 @property (assign, nonatomic, readonly) BOOL selected;
+@property (assign, nonatomic) BOOL canSelect;
 @property (copy, nonatomic) void (^didTitleViewBlock)(BOOL selected);
 - (instancetype)initWithManager:(HXPhotoManager *)manager; 
 - (void)deSelect;
-//- (void)setupAlpha:(BOOL)anima;
 @end
 
 @interface HXAlbumTitleButton : UIButton

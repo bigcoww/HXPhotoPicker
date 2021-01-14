@@ -2,8 +2,8 @@
 //  HXPhotoEditChartletPreviewView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/7/1.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/1.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditChartletPreviewView.h"
@@ -56,7 +56,8 @@
         self.imageSize = self.imageView.image.size;
         [self updateFrame];
     }else if (model.type == HXPhotoEditChartletModelType_ImageNamed) {
-        self.imageView.image = [UIImage hx_imageNamed:model.imageNamed];
+        UIImage *image = [UIImage hx_imageContentsOfFile:model.imageNamed];
+        self.imageView.image = image;
         self.imageSize = self.imageView.image.size;
         [self updateFrame];
     }else if (model.type == HXPhotoEditChartletModelType_NetworkURL) {
@@ -144,14 +145,21 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     [self addSubview:self.loadingView];
-    [self.contentView hx_radiusWithRadius:5 corner:UIRectCornerAllCorners];
+    if (HX_IOS11_Later) {
+        [self.contentView hx_radiusWithRadius:5 corner:UIRectCornerAllCorners];
+    }
     self.layer.shadowOffset = CGSizeMake(0, 0);
     self.layer.shadowColor = [UIColor blackColor].CGColor;
     self.layer.shadowRadius = 5.f;
     self.layer.shadowOpacity = 0.3f;
     _viewFrame = CGRectZero;
 }
-
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    if (HX_IOS11_Earlier) {
+        [self.contentView hx_radiusWithRadius:5 corner:UIRectCornerAllCorners];
+    }
+}
 - (UIActivityIndicatorView *)loadingView {
     if (!_loadingView) {
         _loadingView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];

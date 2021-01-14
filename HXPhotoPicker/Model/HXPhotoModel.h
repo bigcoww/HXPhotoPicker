@@ -1,9 +1,9 @@
 //
 //  HXPhotoModel.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/8.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/8.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -52,6 +52,7 @@
 @property (assign, nonatomic) CGSize imageSize;
 
 /// 本地视频URL / 网络视频地址
+/// 系统相册的资源(PHAsset不为nil的)需要通过exportVideoWithPresetName...方法获取
 @property (strong, nonatomic) NSURL * _Nullable videoURL;
 
 /// livephoto - 网络视频地址
@@ -145,28 +146,23 @@
 @property (assign, nonatomic) NSTimeInterval videoCurrentTime;
 
 /// 当前资源的大小 单位：b 字节
-/// 本地图片获取的大小可能不准确
+/// 网络图片/视频为0
 @property (assign, nonatomic) NSUInteger assetByte;
 @property (assign, nonatomic) BOOL requestAssetByte;
 
 /// 编辑的数据
 /// 传入之前的编辑数据可以在原有基础上继续编辑
 @property (strong, nonatomic) HXPhotoEdit * _Nullable photoEdit;
-
-/**  临时图片 */
-@property (strong, nonatomic) UIImage * _Nullable tempImage;
-
-/**  如果当前为视频资源时是禁止选择  */
-@property (assign, nonatomic) BOOL videoUnableSelect;
-/**  是否隐藏选择按钮  */
+/// 是否隐藏选择按钮
 @property (assign, nonatomic) BOOL needHideSelectBtn;
-
-/**  如果当前为视频资源时的视频状态  */
+/// 如果当前为视频资源时的视频状态
 @property (assign, nonatomic) HXPhotoModelVideoState videoState;
 @property (copy, nonatomic) NSString * _Nullable cameraNormalImageNamed;
 @property (copy, nonatomic) NSString * _Nullable cameraPreviewImageNamed;
 
 @property (assign, nonatomic) BOOL loadOriginalImage;
+/// 临时图片
+@property (strong, nonatomic) UIImage * _Nullable tempImage;
 
 #pragma mark - < init >
 /// 通过image初始化
@@ -211,30 +207,25 @@
                                               netWorkVideoURL:(NSURL * _Nullable)videoURL;
 /// 判断两个HXPhotoModel是否是同一个
 /// @param photoModel 模型
-- (BOOL)isEqualPhotoModel:(HXPhotoModel * _Nullable)photoModel;
+- (BOOL)isEqualToPhotoModel:(HXPhotoModel * _Nullable)photoModel;
+
+/// 获取当前asset是不是iCloud上的资源
+- (void)isICloudAssetWithCompletion:(void (^_Nullable)(BOOL isICloud, HXPhotoModel * _Nullable model))completion;
 
 #pragma mark - < Request >
 + (id _Nullable)requestImageWithURL:(NSURL *_Nullable)url progress:(void (^ _Nullable) (NSInteger receivedSize, NSInteger expectedSize))progress completion:(void (^ _Nullable) (UIImage * _Nullable image, NSURL * _Nullable url, NSError * _Nullable error))completion;
 
-+ (PHImageRequestID)requestThumbImageWithPHAsset:(PHAsset * _Nullable)asset size:(CGSize)size completion:(void (^ _Nullable)(UIImage *_Nullable image, PHAsset * _Nullable asset))completion;
-
-- (PHImageRequestID)requestImageWithOptions:(PHImageRequestOptions * _Nullable)options
-                                 targetSize:(CGSize)targetSize
-                              resultHandler:(void (^ _Nullable)(UIImage *__nullable result, NSDictionary *__nullable info))resultHandler;
-
 /// 请求获取缩略图，主要用在列表上展示。此方法会回调多次，如果为视频的话就是视频封面
 - (PHImageRequestID)requestThumbImageCompletion:(HXModelImageSuccessBlock _Nullable)completion;
-- (PHImageRequestID)requestThumbImageWithSize:(CGSize)size
-                                   completion:(HXModelImageSuccessBlock _Nullable)completion;
+- (PHImageRequestID)requestThumbImageWithWidth:(CGFloat)width
+                                    completion:(HXModelImageSuccessBlock _Nullable)completion;
 
 /// 请求获取缩略图，主要用在列表上展示。此方法只会回调一次
-- (PHImageRequestID)highQualityRequestThumbImageWithSize:(CGSize)size
-                                              completion:(HXModelImageSuccessBlock _Nullable )completion;
+- (PHImageRequestID)highQualityRequestThumbImageWithWidth:(CGFloat)width
+                                               completion:(HXModelImageSuccessBlock _Nullable )completion;
 
 /// 请求获取预览大图，此方法只会回调一次，如果为视频的话就是视频封面
 /// @param size 请求图片质量大小，不是尺寸的大小
-/// @param startRequestICloud 开始请求iCloud上的资源
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestPreviewImageWithSize:(CGSize)size
                              startRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                                 progressHandler:(HXModelProgressHandler _Nullable)progressHandler
@@ -243,8 +234,6 @@
 
 /// 请求获取LivePhoto
 /// @param size 请求图片质量大小，不是尺寸的大小
-/// @param startRequestICloud 开始请求iCloud上的资源
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestLivePhotoWithSize:(CGSize)size
                           startRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                              progressHandler:(HXModelProgressHandler _Nullable)progressHandler
@@ -257,32 +246,24 @@
                                 completion:(HXModelLivePhotoSuccessBlock _Nullable)completion;
 
 /// 请求获取ImageData
-/// @param startRequestICloud 准备开始下载iCloud上的视频
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestImageDataStartRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                                        progressHandler:(HXModelProgressHandler _Nullable)progressHandler
                                                success:(HXModelImageDataSuccessBlock _Nullable)success
                                                 failed:(HXModelFailedBlock _Nullable)failed;
 
 /// 请求获取AVAsset
-/// @param startRequestICloud 准备开始下载iCloud上的视频
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestAVAssetStartRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                                      progressHandler:(HXModelProgressHandler _Nullable)progressHandler
                                              success:(HXModelAVAssetSuccessBlock _Nullable)success
                                               failed:(HXModelFailedBlock _Nullable)failed;
 
 /// 请求获取AVAssetExportSession
-/// @param startRequestICloud 准备开始下载iCloud上的视频
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestAVAssetExportSessionStartRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                                                   progressHandler:(HXModelProgressHandler _Nullable)progressHandler
                                                        success:(HXModelAVExportSessionSuccessBlock _Nullable)success
                                                            failed:(HXModelFailedBlock _Nullable)failed;
 
 /// 请求获取AVPlayerItem
-/// @param startRequestICloud 准备开始下载iCloud上的视频
-/// @param progressHandler iCloud下载进度
 - (PHImageRequestID)requestAVPlayerItemStartRequestICloud:(HXModelStartRequestICloud _Nullable)startRequestICloud
                                           progressHandler:(HXModelProgressHandler _Nullable)progressHandler
                                                success:(HXModelAVPlayerItemSuccessBlock _Nullable)success
@@ -319,43 +300,29 @@
 
 /// 获取本地图片的URL，内部会将image写入临时目录然后生成文件路径
 /// 不是本地图片的会走失败回调
-- (void)fetchCameraImageURLWithSuccess:(HXModelImageURLSuccessBlock _Nullable)success
-                                failed:(HXModelFailedBlock _Nullable)failed;
+- (void)getCameraImageURLWithSuccess:(HXModelImageURLSuccessBlock _Nullable)success
+                              failed:(HXModelFailedBlock _Nullable)failed;
+
+/// 获取当前资源的image，包括本地/网络图片、视频
+/// 如果为视频则为视频封面
+- (void)getImageWithSuccess:(HXModelImageSuccessBlock _Nullable)success
+                     failed:(HXModelFailedBlock _Nullable)failed;
 
 /// 获取当前资源的URL，包括本地/网络图片、视频
 /// 此方法导出手机里的视频质量为中等质量
-- (void)fetchAssetURLWithSuccess:(HXModelURLHandler _Nullable)success
-                          failed:(HXModelFailedBlock _Nullable)failed;
+- (void)getAssetURLWithSuccess:(HXModelURLHandler _Nullable)success
+                        failed:(HXModelFailedBlock _Nullable)failed;
 
 /// 获取当前资源的URL，包括本地/网络图片、视频
 /// @param presetName 视频质量，为空的话默认 AVAssetExportPresetMediumQuality
-- (void)fetchAssetURLWithVideoPresetName:(NSString * _Nullable)presetName
-                                 success:(HXModelURLHandler _Nullable)success
-                                  failed:(HXModelFailedBlock _Nullable)failed;
+- (void)getAssetURLWithVideoPresetName:(NSString * _Nullable)presetName
+                               success:(HXModelURLHandler _Nullable)success
+                                failed:(HXModelFailedBlock _Nullable)failed;
+
+/// 获取原视频地址
+- (void)getVideoURLWithSuccess:(HXModelURLHandler _Nullable)success
+                        failed:(HXModelFailedBlock _Nullable)failed;
 
 @property (assign, nonatomic) CGFloat previewContentOffsetX;
 
-@end
-
-@class CLGeocoder;
-@interface HXPhotoDateModel : NSObject
-/**  位置信息 - 如果当前天数内包含带有位置信息的资源则有值 */
-@property (strong, nonatomic) CLLocation * _Nullable location;
-/**  日期信息 */
-@property (strong, nonatomic) NSDate *_Nullable date;
-/**  日期信息字符串 */
-@property (copy, nonatomic) NSString *_Nullable dateString;
-/**  位置信息字符串 */
-@property (copy, nonatomic) NSString * _Nullable locationString;;
-/**  同一天的资源数组 */
-@property (copy, nonatomic) NSArray * _Nullable photoModelArray;
-/**  位置信息子标题 */
-@property (copy, nonatomic) NSString * _Nullable locationSubTitle;
-/**  位置信息标题 */
-@property (copy, nonatomic) NSString * _Nullable locationTitle;
-
-@property (strong, nonatomic) NSMutableArray * _Nullable locationList;
-@property (assign, nonatomic) BOOL hasLocationTitles;
-@property (assign, nonatomic) BOOL locationError;
-//@property (strong, nonatomic) CLGeocoder *geocoder;
 @end

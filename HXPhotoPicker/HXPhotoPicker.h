@@ -1,13 +1,12 @@
 //
 //  HXPhotoPicker.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/24.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/24.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoView.h"
-#import "HXPhotoSubViewCell.h"
 #import "HXPhotoManager.h"
 #import "HXCustomNavigationController.h"
 #import "HXAlbumListViewController.h"

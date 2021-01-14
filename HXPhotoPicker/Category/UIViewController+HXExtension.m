@@ -1,9 +1,9 @@
 //
 //  UIViewController+HXExtension.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/24.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/24.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "UIViewController+HXExtension.h"
@@ -36,16 +36,12 @@
         }
     };
     HXCustomNavigationController *nav = [[HXCustomNavigationController alloc] initWithManager:manager doneBlock:modelBlock cancelBlock:cancelBlock];
-    nav.modalPresentationStyle = UIModalPresentationOverFullScreen;
-    nav.modalPresentationCapturesStatusBarAppearance = YES;
     [self presentViewController:nav animated:YES completion:nil];
 }
 - (void)hx_presentSelectPhotoControllerWithManager:(HXPhotoManager *_Nullable)manager
                                           delegate:(id _Nullable )delegate {
     
     HXCustomNavigationController *nav = [[HXCustomNavigationController alloc] initWithManager:manager delegate:delegate];
-    nav.modalPresentationStyle = UIModalPresentationOverFullScreen;
-    nav.modalPresentationCapturesStatusBarAppearance = YES;
     [self presentViewController:nav animated:YES completion:nil];
 }
 
@@ -70,9 +66,7 @@
                 nav.modalPresentationCapturesStatusBarAppearance = YES;
                 [weakSelf presentViewController:nav animated:YES completion:nil];
             }else {
-                hx_showAlert(weakSelf, [NSBundle hx_localizedStringForKey:@"无法使用相机"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相机中允许访问相机"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"] , nil, ^{
-                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-                });
+                [HXPhotoTools showUnusableCameraAlert:weakSelf];
             }
         });
     }];
@@ -101,9 +95,7 @@
                 nav.modalPresentationCapturesStatusBarAppearance = YES;
                 [weakSelf presentViewController:nav animated:YES completion:nil];
             }else {
-                hx_showAlert(weakSelf, [NSBundle hx_localizedStringForKey:@"无法使用相机"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相机中允许访问相机"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"] , nil, ^{
-                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-                });
+                [HXPhotoTools showUnusableCameraAlert:weakSelf];
             }
         });
     }];
@@ -111,6 +103,21 @@
 
 - (void)hx_presentPreviewPhotoControllerWithManager:(HXPhotoManager *)manager
                                        previewStyle:(HXPhotoViewPreViewShowStyle)previewStyle
+                              showBottomPageControl:(BOOL)showBottomPageControl
+                                       currentIndex:(NSUInteger)currentIndex {
+    [self hx_presentPreviewPhotoControllerWithManager:manager previewStyle:previewStyle showBottomPageControl:showBottomPageControl currentIndex:currentIndex photoView:nil];
+}
+
+- (void)hx_presentPreviewPhotoControllerWithManager:(HXPhotoManager *)manager
+                                       previewStyle:(HXPhotoViewPreViewShowStyle)previewStyle
+                                       currentIndex:(NSUInteger)currentIndex
+                                          photoView:(HXPhotoView * _Nullable)photoView {
+    [self hx_presentPreviewPhotoControllerWithManager:manager previewStyle:previewStyle showBottomPageControl:YES currentIndex:currentIndex photoView:photoView];
+}
+
+- (void)hx_presentPreviewPhotoControllerWithManager:(HXPhotoManager *)manager
+                                       previewStyle:(HXPhotoViewPreViewShowStyle)previewStyle
+                              showBottomPageControl:(BOOL)showBottomPageControl
                                        currentIndex:(NSUInteger)currentIndex
                                           photoView:(HXPhotoView * _Nullable)photoView {
     
@@ -129,6 +136,11 @@
         vc.currentModelIndex = 0;
     }else {
         vc.currentModelIndex = currentIndex;
+    }
+    if (photoView) {
+        vc.showBottomPageControl = photoView.previewShowDeleteButton;
+    }else {
+        vc.showBottomPageControl = showBottomPageControl;
     }
     vc.previewShowDeleteButton = photoView.previewShowDeleteButton;
     vc.photoView = photoView;
@@ -232,7 +244,7 @@
 }
 
 - (HXCustomNavigationController *)hx_customNavigationController {
-    if ([self.navigationController isKindOfClass:[HXCustomNavigationController class]]) {
+    if ([NSStringFromClass([self.navigationController class]) isEqualToString:@"HXCustomNavigationController"]) {
         return (HXCustomNavigationController *)self.navigationController;
     }
     return nil;

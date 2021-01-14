@@ -1,9 +1,9 @@
 //
 //  HXCameraBottomView.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2020/7/17.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/17.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -22,9 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (strong, nonatomic) HXPhotoManager *manager;
 + (instancetype)initView;
 - (void)hiddenTitle;
-- (void)changeTime:(NSTimeInterval)time;
 - (void)startRecord;
 - (void)stopRecord;
+
+- (void)videoRecordEnd;
 @end
 
 NS_ASSUME_NONNULL_END

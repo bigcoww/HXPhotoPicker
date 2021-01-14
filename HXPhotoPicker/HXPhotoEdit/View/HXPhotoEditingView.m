@@ -2,8 +2,8 @@
 //  HXPhotoEditingView.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/29.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/29.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEditingView.h"
@@ -14,14 +14,14 @@
 #import "UIImage+HXExtension.h"
 #import "HXPhotoEditImageView.h"
 #import "HXMECancelBlock.h"
+#import "HXPhotoEditConfiguration.h"
 
 #import <AVFoundation/AVFoundation.h>
 
 #define HXMaxZoomScale 2.5f
 
 #define HXClipZoom_margin 20.f
-CGFloat const hx_editingView_drawLineWidth = 5.f;
-CGFloat const hx_editingView_splashWidth = 25.f;
+CGFloat const hx_editingView_splashWidth = 50.f;
 
 typedef NS_ENUM(NSUInteger, HXPhotoEditingViewOperation) {
     HXPhotoEditingViewOperationNone = 0,
@@ -106,7 +106,7 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     /** 缩放 */
     self.maximumZoomScale = HXMaxZoomScale;
     self.minimumZoomScale = 1.0;
-    _editToolbarDefaultHeight = 60.f;
+    _editToolbarDefaultHeight = 110.f;
     _defaultMaximumZoomScale = HXMaxZoomScale;
     
     /** 创建缩放层，避免直接缩放LFClippingView，会改变其transform */
@@ -172,18 +172,24 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
 }
 - (void)setConfiguration:(HXPhotoEditConfiguration *)configuration {
     _configuration = configuration;
+    if (configuration.onlyCliping && configuration.aspectRatio == HXPhotoEditAspectRatioType_1x1) {
+        if (configuration.isRoundCliping) {
+            [self.imagePixel removeFromSuperview];
+        }
+        self.gridView.isRound = configuration.isRoundCliping;
+    }
     self.clippingView.configuration = configuration;
 }
 - (UIEdgeInsets)refer_clippingInsets {
     CGFloat top = HXClipZoom_margin + hxTopMargin;
     CGFloat left = HXClipZoom_margin;
-    CGFloat bottom = self.editToolbarDefaultHeight + HXClipZoom_margin + hxBottomMargin + 30;
+    CGFloat bottom = self.editToolbarDefaultHeight + hxBottomMargin + 20;
     CGFloat right = HXClipZoom_margin;
     UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (orientation == UIInterfaceOrientationLandscapeRight || orientation == UIInterfaceOrientationLandscapeLeft) {
-        top = HXClipZoom_margin;
+        top = HXClipZoom_margin + 15;
         left = HXClipZoom_margin + hxTopMargin;
-        bottom = self.editToolbarDefaultHeight + HXClipZoom_margin + 30;
+        bottom = self.editToolbarDefaultHeight + HXClipZoom_margin + 15;
         right = left;
     }
     return UIEdgeInsetsMake(top, left, bottom, right);
@@ -324,8 +330,14 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     [self setClipping:clipping animated:NO];
 }
 - (void)setClipping:(BOOL)clipping animated:(BOOL)animated {
+    [self setClipping:clipping animated:animated completion:nil];
+}
+- (void)setClipping:(BOOL)clipping animated:(BOOL)animated completion:(void (^)(void))completion {
     if (!self.image) {
         /** 没有图片禁止开启编辑模式 */
+        if (completion) {
+            completion();
+        }
         return;
     }
     self.editedOperation = HXPhotoEditingViewOperationNone;
@@ -406,6 +418,9 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
                         }
                     }
                 } completion:^(BOOL finished) {
+                    if (completion) {
+                        completion();
+                    }
                 }];
             }];
         } else {
@@ -430,6 +445,9 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
                 if ([self.clippingDelegate respondsToSelector:@selector(editingViewDidAppearClip:)]) {
                     [self.clippingDelegate editingViewDidAppearClip:self];
                 }
+            }
+            if (completion) {
+                completion();
             }
         }
         [self updateImagePixelText];
@@ -456,6 +474,11 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
                     if ([self.clippingDelegate respondsToSelector:@selector(editingViewDidDisappearClip:)]) {
                         [self.clippingDelegate editingViewDidDisappearClip:self];
                     }
+                    self.clippingView.imageView.stickerView.angle = self.clippingView.angle;
+                    self.clippingView.imageView.stickerView.mirrorType = self.clippingView.mirrorType;
+                    if (completion) {
+                        completion();
+                    }
                 }];
                 
             }];
@@ -470,6 +493,11 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
             [self fixedLongImage];
             if ([self.clippingDelegate respondsToSelector:@selector(editingViewDidDisappearClip:)]) {
                 [self.clippingDelegate editingViewDidDisappearClip:self];
+            }
+            self.clippingView.imageView.stickerView.angle = self.clippingView.angle;
+            self.clippingView.imageView.stickerView.mirrorType = self.clippingView.mirrorType;
+            if (completion) {
+                completion();
             }
         }
     }
@@ -504,6 +532,8 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
                 if ([self.clippingDelegate respondsToSelector:@selector(editingViewDidDisappearClip:)]) {
                     [self.clippingDelegate editingViewDidDisappearClip:self];
                 }
+                self.clippingView.imageView.stickerView.angle = self.clippingView.angle;
+                self.clippingView.imageView.stickerView.mirrorType = self.clippingView.mirrorType;
             }];
         }];
     } else {
@@ -518,12 +548,18 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
         if ([self.clippingDelegate respondsToSelector:@selector(editingViewDidDisappearClip:)]) {
             [self.clippingDelegate editingViewDidDisappearClip:self];
         }
+        self.clippingView.imageView.stickerView.angle = self.clippingView.angle;
+        self.clippingView.imageView.stickerView.mirrorType = self.clippingView.mirrorType;
     }
 }
 
 - (void)cancel {
     [self.clippingView cancel];
     _clippingRect = AVMakeRectWithAspectRatioInsideRect(self.clippingView.hx_size, self.bounds);
+    UIEdgeInsets insets = [self refer_clippingInsets];
+    /** 计算clippingView与父界面的中心偏差坐标 */
+    self.clippingView.offsetSuperCenter = self.isClipping ? CGPointMake(insets.right-insets.left, insets.bottom-insets.top) : CGPointZero;
+    
     self.gridView.gridRect = self.clippingView.frame;
     [self.gridView setAspectRatioWithoutDelegate:self.old_aspectRatio];
     self.imagePixel.center = CGPointMake(CGRectGetMidX(self.gridView.gridRect), CGRectGetMidY(self.gridView.gridRect));
@@ -531,7 +567,24 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     CGFloat max = MAX(self.minimumZoomScale + self.defaultMaximumZoomScale - self.defaultMaximumZoomScale * (self.clippingView.zoomScale / self.clippingView.maximumZoomScale), self.minimumZoomScale);
     self.maximumZoomScale = MIN(max, self.defaultMaximumZoomScale);
 }
-
+- (void)resetToRridRectWithAspectRatioIndex:(NSInteger)aspectRatioIndex {
+    CGRect oldGridRect = self.gridView.gridRect;
+    self.onceDefaultAspectRatioIndex = 0;
+    [self.gridView setupAspectRatio:(HXPhotoEditGridViewAspectRatioType)aspectRatioIndex];
+    CGRect newGridRect = self.gridView.gridRect;
+    BOOL isSame = CGRectEqualToRect(oldGridRect, newGridRect);
+    if (!isSame && aspectRatioIndex != 0) {
+        self.gridView.showMaskLayer = NO;
+        [UIView animateWithDuration:0.25 animations:^{
+            /** 放大 */
+            [self.clippingView zoomInToRect:self.gridView.gridRect];
+            /** 图片像素 */
+            [self updateImagePixelText];
+            /** 缩小 */
+            [self.clippingView zoomOutToRect:self.gridView.gridRect];
+        }];
+    }
+}
 /** 还原 */
 - (void)reset {
     if (self.isClipping) {
@@ -565,6 +618,13 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     }
 }
 
+/// 镜像翻转
+- (void)mirrorFlip {
+    if (self.isClipping) {
+        [self.clippingView mirrorFlip];
+    }
+}
+
 /** 默认长宽比例 */
 - (void)setDefaultAspectRatioIndex:(NSUInteger)defaultAspectRatioIndex {
     _defaultAspectRatioIndex = defaultAspectRatioIndex;
@@ -573,9 +633,13 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
 
 /** 长宽比例 */
 - (void)setAspectRatioIndex:(NSUInteger)aspectRatioIndex {
+    [self setAspectRatioIndex:(HXPhotoEditGridViewAspectRatioType)aspectRatioIndex animated:NO];
+}
+- (void)setAspectRatioIndex:(NSUInteger)aspectRatioIndex animated:(BOOL)animated {
     if (self.fixedAspectRatio) return;
+    self.gridView.showMaskLayer = NO;
     self.onceDefaultAspectRatioIndex = 0;
-    [self.gridView setAspectRatio:(HXPhotoEditGridViewAspectRatioType)aspectRatioIndex];
+    [self.gridView setAspectRatio:(HXPhotoEditGridViewAspectRatioType)aspectRatioIndex animated:animated];
 }
 
 - (void)setCustomRatioSize:(CGSize)customRatioSize {
@@ -611,7 +675,7 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
 /** 创建编辑图片 */
 - (void)createEditImage:(void (^)(UIImage *editImage))complete {
     CGFloat scale = self.clippingView.zoomScale;
-    CGAffineTransform trans = self.clippingView.transform;
+//    CGAffineTransform trans = self.clippingView.transform;
     CGPoint contentOffset = self.clippingView.contentOffset;
 //    CGSize contentSize = self.clippingView.contentSize;
     CGRect clippingRect = self.clippingView.frame;
@@ -620,10 +684,15 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
 //    clippingRect = HXMediaEditProundRect(clippingRect);
     
     CGSize size = clippingRect.size;
-    CGFloat rotate = acosf(trans.a);
-    if (trans.b < 0) {
-        rotate = M_PI-asinf(trans.b);
+//    CGFloat rotate = acosf(trans.a);
+//    if (trans.b < 0) {
+//        rotate = M_PI-asinf(trans.b);
+//    }
+    CGFloat rotate = M_PI * (self.clippingView.angle) / 180.0;
+    if (rotate != 0) {
+        rotate = 2 * M_PI + rotate;
     }
+    
     /** 获取编辑图层视图 */
     UIImage *otherImage = [self.clippingView editOtherImagesInRect:clippingRect rotate:rotate];
     
@@ -633,7 +702,9 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     CGFloat clipScale = scale * (clipViewRect.size.width/(self.imageSize.width*editImage.scale));
     /** 计算被剪裁的原尺寸图片位置 */
     CGRect clipRect;
-    if (fabs(trans.b) == 1.f) {
+    
+    if (self.clippingView.angle % 180 != 0) {
+        // 横向
         clipRect = CGRectMake(contentOffset.x/clipScale, contentOffset.y/clipScale, size.height/clipScale, size.width/clipScale);
     } else {
         clipRect = CGRectMake(contentOffset.x/clipScale, contentOffset.y/clipScale, size.width/clipScale, size.height/clipScale);
@@ -641,6 +712,9 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     /** 参数取整，否则可能会出现1像素偏差 */
 //    clipRect = HXMediaEditProundRect(clipRect);
     
+    NSInteger angle = labs(self.clippingView.angle);
+    BOOL isHorizontal = self.clippingView.mirrorType == HXPhotoClippingViewMirrorType_Horizontal;
+    BOOL isRoundCliping = self.configuration.isRoundCliping;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         /** 创建方法 */
         UIImage *(^ClipEditImage)(UIImage *) = ^UIImage * (UIImage *image) {
@@ -648,20 +722,45 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
             @autoreleasepool {
                 /** 剪裁图片 */
                 returnedImage = [image hx_cropInRect:clipRect];
-                if (rotate > 0) {
+                if (isRoundCliping) {
+                    returnedImage = [returnedImage hx_roundClipingImage];
+                }
+                if (rotate > 0 || isHorizontal) {
                     /** 调整角度 */
-                    returnedImage = [returnedImage hx_imageRotatedByRadians:rotate];
+                    if (angle == 0 || angle == 360) {
+                        if (isHorizontal) {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationUpMirrored];
+                        }
+                    }else if (angle == 90) {
+                        if (!isHorizontal) {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationLeft];
+                        }else {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationRightMirrored];
+                        }
+                    }else if (angle == 180) {
+                        if (!isHorizontal) {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationDown];
+                        }else {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationDownMirrored];
+                        }
+                    }else if (angle == 270) {
+                        if (!isHorizontal) {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationRight];
+                        }else {
+                            returnedImage = [returnedImage hx_rotationImage:UIImageOrientationLeftMirrored];
+                        }
+                    }
                 }
                 if (otherImage) {
                     UIImage *scaleOtherImage = [otherImage hx_scaleToFillSize:returnedImage.size];
                     if (scaleOtherImage) {
                         /** 合并图层 */
-                        returnedImage = [returnedImage hx_mergeimages:@[scaleOtherImage]];
+                        NSArray *otherImages = @[scaleOtherImage];
+                        returnedImage = [returnedImage hx_mergeimages:otherImages];
                     }
                 }
+                return returnedImage;
             }
-            
-            return returnedImage;
         };
         editImage = ClipEditImage(editImage);
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -689,7 +788,7 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     
     __weak typeof(self) weakSelf = self;
     void (^block)(CGRect) = ^(CGRect rect){
-        if (clippingView.isReseting || clippingView.isRotating) { /** 重置/旋转 需要将遮罩显示也重置 */
+        if (clippingView.isReseting || clippingView.isRotating || clippingView.isMirrorFlip) { /** 重置/旋转 需要将遮罩显示也重置 */
             [weakSelf.gridView setGridRect:rect maskLayer:YES animated:YES];
         } else if (clippingView.isZooming) { /** 缩放 */
             weakSelf.gridView.showMaskLayer = NO;
@@ -868,6 +967,9 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
 - (void)scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale {
     /** 重置contentSize */
     [self resetContentSize:YES];
+    if ([self.clippingDelegate respondsToSelector:@selector(editingViewViewDidEndZooming:)]) {
+        [self.clippingDelegate editingViewViewDidEndZooming:self];
+    }
 }
 
 
@@ -958,11 +1060,14 @@ NSString *const kHXEditingViewData_clippingView = @"kHXEditingViewData_clippingV
     
     [self setSubViewData];
 }
-
+- (void)setDrawLineWidth:(CGFloat)drawLineWidth {
+    _drawLineWidth = drawLineWidth;
+    self.clippingView.imageView.drawView.lineWidth = drawLineWidth;
+}
 - (void)setSubViewData
 {
     /** 默认绘画线粗 */
-    self.clippingView.imageView.drawView.lineWidth = hx_editingView_drawLineWidth / self.zoomScale;
+    self.clippingView.imageView.drawView.lineWidth = self.drawLineWidth / self.zoomScale;
     /** 默认模糊线粗 */
 //    [self setSplashLineWidth:hx_editingView_splashWidth/self.zoomScale];
     self.clippingView.screenScale = self.zoomScale * self.clippingView.zoomScale;

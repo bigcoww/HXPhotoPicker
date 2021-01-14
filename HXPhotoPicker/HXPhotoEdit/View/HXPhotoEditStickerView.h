@@ -2,8 +2,8 @@
 //  HXPhotoEditStickerView.h
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/6/23.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/6/23.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -28,9 +28,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) CGFloat (^ getMaxScale)(CGSize size);
 
 /** 数据 */
-@property (nonatomic, strong) NSDictionary *data;
+@property (nonatomic, strong, nullable) NSDictionary *data;
 @property (assign, nonatomic, getter=isHitTestSubView) BOOL hitTestSubView;
 - (HXPhotoEditStickerItemView *)addStickerItem:(HXPhotoEditStickerItem *)item isSelected:(BOOL)selected;
+
+@property (assign, nonatomic) NSInteger angle;
+@property (assign, nonatomic) NSInteger mirrorType;
+
 - (void)removeSelectItem;
 - (void)clearCoverage;
 @end

@@ -2,8 +2,8 @@
 //  HXPhotoEdit.m
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/7/1.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/1.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXPhotoEdit.h"
@@ -39,13 +39,18 @@
 }
 
 #pragma mark - private
+- (void)clearData {
+    self.editPreviewImage = nil;
+    self.editPosterImage = nil;
+    self.editImage = nil;
+    self.editData = nil;
+}
 - (void)setEditingImage:(UIImage *)editPreviewImage {
     _editPreviewImage = editPreviewImage;
     /** 设置编辑封面 */
     CGFloat width = MIN(80.f * 2.f, MIN(editPreviewImage.size.width, editPreviewImage.size.height));
     CGSize size = [UIImage hx_scaleImageSizeBySize:editPreviewImage.size targetSize:CGSizeMake(width, width) isBoth:YES];
     _editPosterImage = [editPreviewImage hx_scaleToFitSize:size];
-    _editPreviewData = HX_UIImageJPEGRepresentation(editPreviewImage);
 }
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
     if (self = [super init]) {
@@ -58,7 +63,12 @@
     }
     return self;
 }
-
+- (NSData *)editPreviewData {
+    if (!_editPreviewData) {
+        _editPreviewData = HX_UIImageJPEGRepresentation(self.editPreviewImage);
+    }
+    return _editPreviewData;
+}
 - (void)encodeWithCoder:(NSCoder *)aCoder {
     [aCoder encodeObject:self.editPosterImage forKey:@"editPosterImage"];
     [aCoder encodeObject:self.editPreviewImage forKey:@"editPreviewImage"];

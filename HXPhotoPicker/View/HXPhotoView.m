@@ -1,13 +1,12 @@
 //
 //  HXPhotoView.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/17.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/17.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoView.h"
-#import "HXPhotoSubViewCell.h"
 #import "UIView+HXExtension.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <MediaPlayer/MediaPlayer.h>
@@ -20,7 +19,7 @@
 #import "HXPhotoBottomSelectView.h"
 #import "UIColor+HXExtension.h"
 
-@interface HXPhotoView ()<HXCollectionViewDataSource,HXCollectionViewDelegate, UICollectionViewDelegateFlowLayout,HXPhotoSubViewCellDelegate,UIActionSheetDelegate,UIAlertViewDelegate,HXAlbumListViewControllerDelegate,HXCustomCameraViewControllerDelegate,HXPhotoPreviewViewControllerDelegate, HXPhotoViewControllerDelegate, HXCustomNavigationControllerDelegate>
+@interface HXPhotoView ()<HXCollectionViewDataSource,HXCollectionViewDelegate, UICollectionViewDelegateFlowLayout,HXPhotoSubViewCellDelegate,UIAlertViewDelegate,HXAlbumListViewControllerDelegate,HXCustomCameraViewControllerDelegate,HXPhotoPreviewViewControllerDelegate, HXPhotoViewControllerDelegate, HXCustomNavigationControllerDelegate>
 @property (strong, nonatomic) NSMutableArray *dataList;
 @property (strong, nonatomic) NSMutableArray *photos;
 @property (strong, nonatomic) NSMutableArray *videos;
@@ -128,7 +127,6 @@
 - (HXCollectionView *)collectionView {
     if (!_collectionView) {
         _collectionView = [[HXCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:self.flowLayout];
-        _collectionView.tag = 8888;
         if (self.scrollDirection != UICollectionViewScrollDirectionHorizontal) {
             _collectionView.scrollEnabled = NO;
         }
@@ -160,6 +158,7 @@
     [super setBackgroundColor:backgroundColor];
 }
 - (void)setup {
+    self.maximumHeight = HX_ScreenHeight;
     self.lastWidth = 0;
     if (_manager) {
         _manager.configuration.specialModeNeedHideVideoSelectBtn = YES;
@@ -170,6 +169,7 @@
     self.tag = 9999;
     _showAddCell = YES;
     self.tempShowAddCell = YES;
+    self.previewShowBottomPageControl = YES;
     self.adaptiveDarkness = YES;
     
     self.flowLayout.minimumLineSpacing = self.spacing;
@@ -199,6 +199,7 @@
     vc.modelArray = [NSMutableArray arrayWithArray:self.manager.afterSelectedArray];
     vc.currentModelIndex = [self.manager.afterSelectedArray indexOfObject:model];
     vc.previewShowDeleteButton = self.previewShowDeleteButton;
+    vc.showBottomPageControl = self.previewShowBottomPageControl;
     vc.photoView = self;
     vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
     vc.modalPresentationCapturesStatusBarAppearance = YES;
@@ -384,6 +385,7 @@
         vc.modelArray = [NSMutableArray arrayWithArray:self.dataList];
         vc.currentModelIndex = [self.dataList indexOfObject:model];
         vc.previewShowDeleteButton = self.previewShowDeleteButton;
+        vc.showBottomPageControl = self.previewShowBottomPageControl;
         vc.photoView = self;
         vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
         vc.modalPresentationCapturesStatusBarAppearance = YES;
@@ -533,7 +535,7 @@
         NSMutableArray *tempAll = allList.mutableCopy;
         for (HXPhotoModel *pModel in self.dataList) {
             for (HXPhotoModel *subPModel in tempAll) {
-                if ([pModel isEqualPhotoModel:subPModel]) {
+                if ([pModel isEqualToPhotoModel:subPModel]) {
                     [tempAll removeObject:subPModel];
                     break;
                 }
@@ -623,30 +625,12 @@
                 nav.modalPresentationCapturesStatusBarAppearance = YES;
                 [[weakSelf hx_viewController] presentViewController:nav animated:YES completion:nil];
             }else {
-                hx_showAlert([weakSelf hx_viewController], [NSBundle hx_localizedStringForKey:@"无法使用相机"], [NSBundle hx_localizedStringForKey:@"请在设置-隐私-相机中允许访问相机"], [NSBundle hx_localizedStringForKey:@"取消"], [NSBundle hx_localizedStringForKey:@"设置"], nil, ^{
-                    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-                });
+                [HXPhotoTools showUnusableCameraAlert:weakSelf.hx_viewController];
             }
         });
     }];
 }
 
-- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (buttonIndex == 0) {
-        [self goCameraViewController];
-    }else if (buttonIndex == 1){
-        [self directGoPhotoViewController];
-    }
-}
-
-/**
- 前往设置开启权限
- */
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (buttonIndex == 1) {
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-    }
-}
 - (void)customCameraViewController:(HXCustomCameraViewController *)viewController didDone:(HXPhotoModel *)model {
     [self cameraDidNextClick:model];
 }
@@ -681,11 +665,11 @@
             return;
         }
         // 当选中视频个数没有达到最大个数时就添加到选中数组中 
-        if (model.videoDuration < self.manager.configuration.videoMinimumSelectDuration) {
+        if (round(model.videoDuration) < self.manager.configuration.videoMinimumSelectDuration) {
             
             [[self hx_viewController].view hx_showImageHUDText:[NSString stringWithFormat:[NSBundle hx_localizedStringForKey:@"视频少于%ld秒，无法选择"], self.manager.configuration.videoMinimumSelectDuration]];
             return;
-        }else if (model.videoDuration >= self.manager.configuration.videoMaximumSelectDuration + 1) {
+        }else if (round(model.videoDuration) >= self.manager.configuration.videoMaximumSelectDuration + 1) {
             [[self hx_viewController].view hx_showImageHUDText:[NSString stringWithFormat:[NSBundle hx_localizedStringForKey:@"视频大于%ld秒，无法选择"], self.manager.configuration.videoMaximumSelectDuration]];
             return;
         }else if ([self.manager afterSelectVideoCountIsMaximum]) {
@@ -724,8 +708,13 @@
  @param cell 被删的cell
  */
 - (void)cellDidDeleteClcik:(UICollectionViewCell *)cell {
+    if (!cell) {
+        return;
+    }
+    [(HXPhotoSubViewCell *)cell imageView].image = nil;
     NSIndexPath *indexPath = [self.collectionView indexPathForCell:cell];
     HXPhotoModel *model = self.dataList[indexPath.item];
+    model.photoEdit = nil;
     [self.manager afterSelectedListdeletePhotoModel:model];
     if ((model.type == HXPhotoModelMediaTypePhoto || model.type == HXPhotoModelMediaTypePhotoGif) || (model.type == HXPhotoModelMediaTypeCameraPhoto || model.type == HXPhotoModelMediaTypeLivePhoto)) {
         [self.photos removeObject:model];
@@ -751,19 +740,26 @@
         [self.collectionView deleteItemsAtIndexPaths:@[indexPath]];
     } completion:^(BOOL finished) {
         BOOL collectionReload = YES;
-        [CATransaction begin];
-        [CATransaction setDisableActions:YES];
         if (self.showAddCell) {
             if (!self.tempShowAddCell) {
                 self.tempShowAddCell = YES;
+                [CATransaction begin];
+                [CATransaction setDisableActions:YES];
                 [self.collectionView reloadData];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [CATransaction commit];
+                });
                 collectionReload = NO;
             }
         }
         if (self.cellCustomProtocol && collectionReload) {
+            [CATransaction begin];
+            [CATransaction setDisableActions:YES];
             [self.collectionView reloadData];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [CATransaction commit];
+            });
         }
-        [CATransaction commit];
         [self setupNewFrame];
     }];
     [self changeSelectedListModelIndex];
@@ -823,8 +819,6 @@
         i++;
     }
 }
-
-#pragma mark - < HXAlbumListViewControllerDelegate >
 - (void)setupDataWithAllList:(NSArray *)allList photos:(NSArray *)photos videos:(NSArray *)videos original:(BOOL)original {
     
     self.original = original;
@@ -1013,7 +1007,7 @@
         }
     }
     UIEdgeInsets insets = self.collectionView.contentInset;
-    CGFloat itemW = (self.hx_w - self.spacing * (self.lineCount - 1) - insets.left - insets.right) / self.lineCount;
+    CGFloat itemW = (NSInteger)((self.hx_w - self.spacing * (self.lineCount - 1) - insets.left - insets.right) / self.lineCount);
     if (self.scrollDirection == UICollectionViewScrollDirectionHorizontal &&
         itemW > 20) {
         itemW -= 10;
@@ -1053,6 +1047,14 @@
             if (newHeight <= 0) {
                 newHeight = 0;
                 self.numOfLinesOld = 0;
+            }
+            if (newHeight > self.maximumHeight) {
+                newHeight = self.maximumHeight;
+                _collectionView.scrollEnabled = YES;
+            }else {
+                if (self.scrollDirection != UICollectionViewScrollDirectionHorizontal) {
+                    _collectionView.scrollEnabled = NO;
+                }
             }
             if (self.scrollDirection == UICollectionViewScrollDirectionHorizontal) {
                 self.hx_h = itemW;

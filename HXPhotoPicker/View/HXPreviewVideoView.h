@@ -1,9 +1,9 @@
 //
 //  HXPreviewVideoView.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2019/11/15.
-//  Copyright © 2019 洪欣. All rights reserved.
+//  Created by Silence on 2019/11/15.
+//  Copyright © 2019 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -49,8 +49,8 @@ typedef NS_ENUM(NSUInteger, HXPreviewVideoSliderType) {
 
 @interface HXPreviewVideoSliderView : UIView
 @property (assign, nonatomic) BOOL playBtnSelected;
-@property (assign, nonatomic) NSString *currentTime;
-@property (assign, nonatomic) NSString *totalTime;
+@property (copy, nonatomic) NSString *currentTime;
+@property (copy, nonatomic) NSString *totalTime;
 @property (assign, nonatomic) CGFloat currentValue;
 @property (assign, nonatomic) CGFloat progressValue;
 @property (copy, nonatomic) void (^ didPlayBtnBlock)(BOOL isPlay);

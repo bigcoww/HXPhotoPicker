@@ -1,39 +1,41 @@
 //
 //  HXAlbumModel.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/8.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/8.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
 #import <Photos/Photos.h>
 
-/**
- *  每个相册的模型
- */
-
-@interface HXAlbumModel : NSObject 
-/**  相册名称  */
+@interface HXAlbumModel : NSObject
+/// 相册名称
 @property (copy, nonatomic) NSString *albumName;
-/**  照片数量  */
-@property (assign, nonatomic) NSInteger count;
-
+/// 照片数量
+@property (assign, nonatomic) NSUInteger count;
+/// 在获取照片数据之后的真实数量
+@property (assign, nonatomic) NSUInteger realCount;
+@property (strong, nonatomic) PHAsset *realCoverAsset;
+/// 需要重新加载数量
+@property (assign, nonatomic) BOOL needReloadCount;
+/// 选择类型
 @property (assign, nonatomic) NSInteger selectType;
-@property (assign, nonatomic) BOOL creationDateSort;
-
-@property (copy, nonatomic) NSString *localIdentifier;
-@property (strong, nonatomic) PHAssetCollection *assetCollection;
+/// 资源集合
 @property (strong, nonatomic) PHFetchResult *assetResult;
-
-@property (strong, nonatomic) PHFetchOptions *option;
-/**  标记  */
-@property (assign, nonatomic) NSInteger index;
-/**  选中的个数  */
-@property (assign, nonatomic) NSInteger selectedCount;
+/// 下标
+@property (assign, nonatomic) NSUInteger index;
+/// 选中的个数
+@property (assign, nonatomic) NSUInteger selectedCount;
+/// 本地图片数量
 @property (assign, nonatomic) NSUInteger cameraCount;
+/// 如果相册里没有资源则用本地图片代替
 @property (strong, nonatomic) UIImage *tempImage;
 
+- (instancetype)initWithCollection:(PHAssetCollection *)collection
+                           options:(PHFetchOptions *)options;
+- (NSString *)localIdentifier;
+- (PHAssetCollection *)collection;
 - (void)fetchAssetResult;
 - (void)getResultWithCompletion:(void (^)(HXAlbumModel *albumModel))completion;
 

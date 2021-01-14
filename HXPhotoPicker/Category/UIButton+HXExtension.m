@@ -1,9 +1,9 @@
 //
 //  UIButton+HXExtension.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/16.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/16.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "UIButton+HXExtension.h"

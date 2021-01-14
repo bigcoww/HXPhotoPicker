@@ -1,9 +1,9 @@
 //
 //  HXPhotoSubViewCell.h
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 17/2/17.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 17/2/17.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -35,6 +35,7 @@
 @interface HXPhotoSubViewCell : UICollectionViewCell
 @property (weak, nonatomic) id<HXPhotoSubViewCellDelegate> delegate;
 @property (strong, nonatomic, readonly) UIImageView *imageView;
+@property (strong, nonatomic, readonly) UIButton *deleteBtn;
 @property (weak, nonatomic) id<HXPhotoViewCellCustomProtocol> customProtocol;
 @property (assign, nonatomic) BOOL canEdit;
 @property (strong, nonatomic) UIView *highlightMaskView;

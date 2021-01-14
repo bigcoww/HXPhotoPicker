@@ -1,9 +1,9 @@
 //
 //  HXPhotoConfiguration.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/11/21.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/11/21.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXPhotoConfiguration.h"
@@ -32,34 +32,24 @@
     self.photoMaxNum = 9;
     self.videoMaxNum = 1;
     self.showBottomPhotoDetail = YES;
-//    self.reverseDate = YES;
-    
-    
     self.videoMaximumSelectDuration = 3 * 60.f;
     self.videoMinimumSelectDuration = 0.f;
     self.videoMaximumDuration = 60.f;
-    
-    //    self.saveSystemAblum = NO;
-//    self.deleteTemporaryPhoto = YES;
+    self.videoMinimumDuration = 3.f;
     if ([UIScreen mainScreen].bounds.size.width != 320 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone) {
         self.cameraCellShowPreview = YES;
     }
-    //    self.horizontalHideStatusBar = NO;
     self.customAlbumName = [NSBundle mainBundle].infoDictionary[(NSString *)kCFBundleNameKey];
     self.horizontalRowCount = 6;
-    self.sectionHeaderTranslucent = YES;
     self.supportRotation = YES;
-    
     self.pushTransitionDuration = 0.45f;
     self.popTransitionDuration = 0.35f;
     self.popInteractiveTransitionDuration = 0.35f;
-    
     self.doneBtnShowDetail = YES;
     self.videoCanEdit = YES;
     self.photoCanEdit = YES;
     self.localFileName = @"HXPhotoPickerModelArray";
     self.languageType = HXPhotoLanguageTypeSys;
-    
     self.popupTableViewCellHeight = 65.f;
     if (HX_IS_IPhoneX_All) {
         self.editVideoExportPresetName = AVAssetExportPresetHighestQuality;
@@ -102,17 +92,12 @@
     self.cameraCanLocation = YES;
     self.editAssetSaveSystemAblum = NO;
     self.photoEditCustomRatios = @[@{@"原始值" : @"{0, 0}"}, @{@"正方形" : @"{1, 1}"}, @{@"2:3" : @"{2, 3}"}, @{@"3:4" : @"{3, 4}"}, @{@"9:16" : @"{9, 16}"}, @{@"16:9" : @"{16, 9}"}];
-    
     self.useWxPhotoEdit = YES;
-    
-    if ([UIScreen mainScreen].bounds.size.width == 320) {
-        _clarityScale = 0.8;
-    }else if (HX_IS_IPhoneX_All) {
-        _clarityScale = 1.8;
+    if (HX_IS_IPhoneX_All) {
+        _clarityScale = 1.9;
     }else {
         _clarityScale = 1.5;
     }
-    
     if ([UIScreen mainScreen].bounds.size.width == 320) {
         self.rowCount = 3;
     }else {
@@ -122,6 +107,12 @@
             self.rowCount = 4;
         }
     }
+    self.allowSlidingSelection = YES;
+    self.livePhotoAutoPlay = YES;
+}
+- (void)setLivePhotoAutoPlay:(BOOL)livePhotoAutoPlay {
+    _livePhotoAutoPlay = livePhotoAutoPlay;
+    [HXPhotoCommon photoCommon].livePhotoAutoPlay = livePhotoAutoPlay;
 }
 - (UIColor *)cameraFocusBoxColor {
     if (!_cameraFocusBoxColor) {
@@ -157,10 +148,8 @@
 }
 - (void)setClarityScale:(CGFloat)clarityScale {
     if (clarityScale <= 0.f) {
-        if ([UIScreen mainScreen].bounds.size.width == 320) {
-            _clarityScale = 0.8;
-        }else if (HX_IS_IPhoneX_All) {
-            _clarityScale = 1.8;
+        if (HX_IS_IPhoneX_All) {
+            _clarityScale = 1.9;
         }else {
             _clarityScale = 1.5;
         }
@@ -168,14 +157,12 @@
         _clarityScale = clarityScale;
     }
     CGFloat width = ([UIScreen mainScreen].bounds.size.width - 1 * self.rowCount - 1 ) / self.rowCount;
-    CGSize size = CGSizeMake(width * clarityScale, width * clarityScale);
-    [HXPhotoCommon photoCommon].requestSize = size;
+    [HXPhotoCommon photoCommon].requestWidth = width * clarityScale;
 }
 - (void)setRowCount:(NSUInteger)rowCount {
     _rowCount = rowCount;
     CGFloat width = ([UIScreen mainScreen].bounds.size.width - 1 * rowCount - 1 ) / rowCount;
-    CGSize size = CGSizeMake(width * self.clarityScale, width * self.clarityScale);
-    [HXPhotoCommon photoCommon].requestSize = size;
+    [HXPhotoCommon photoCommon].requestWidth = width * self.clarityScale;
 }
 - (UIColor *)themeColor {
     if (!_themeColor) {
@@ -202,15 +189,12 @@
     _videoMaximumSelectDuration = videoMaximumSelectDuration;
 }
 - (void)setVideoMaximumDuration:(NSTimeInterval)videoMaximumDuration {
-    if (videoMaximumDuration <= 3) {
-        videoMaximumDuration = 4;
+    if (videoMaximumDuration <= self.videoMinimumDuration) {
+        videoMaximumDuration = self.videoMinimumDuration + 1.f;
     }
     _videoMaximumDuration = videoMaximumDuration;
 }
 - (CGPoint)movableCropBoxCustomRatio {
-//    if (_movableCropBoxCustomRatio.x == 0 || _movableCropBoxCustomRatio.y == 0) {
-//        return CGPointMake(1, 1);
-//    }
     return _movableCropBoxCustomRatio;
 }
 - (NSInteger)minVideoClippingTime {
@@ -259,6 +243,7 @@
     self.saveSystemAblum = YES;
     self.albumShowMode = HXPhotoAlbumShowModePopup;
     self.photoListCancelLocation = HXPhotoListCancelButtonLocationTypeLeft;
+    self.cameraCellShowPreview = NO;
     
     // 原图按钮设置
     self.changeOriginalTinColor = NO;
@@ -270,6 +255,7 @@
     self.statusBarStyle = UIStatusBarStyleLightContent;
     self.themeColor = [UIColor whiteColor];
     self.photoEditConfigur.themeColor = wxColor;
+    self.previewBottomSelectColor = wxColor;
     self.navBarBackgroudColor = nil;
     self.navBarStyle = UIBarStyleBlack;
     self.navigationTitleArrowColor = [UIColor hx_colorWithHexStr:@"#B2B2B2"];

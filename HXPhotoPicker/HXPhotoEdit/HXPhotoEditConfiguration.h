@@ -2,8 +2,8 @@
 //  HXPhotoEditConfiguration.h
 //  photoEditDemo
 //
-//  Created by 洪欣 on 2020/7/6.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/6.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -39,16 +39,26 @@ typedef NS_ENUM(NSUInteger, HXPhotoEditAspectRatio) {
 #pragma mark - < 画笔相关 >
 /// 画笔颜色数组
 @property (copy, nonatomic) NSArray<UIColor *> *drawColors;
-/// 画笔宽度
-/// 默认 5.f
-@property (assign, nonatomic) CGFloat lineWidth;
+
+/// 默认选择的画笔颜色下标
+/// 与 drawColors 对应，默认 2
+@property (assign, nonatomic) NSInteger defaultDarwColorIndex;
+
+/// 画笔默认宽度为最大宽度的50%
+/// 画笔最大宽度
+/// 默认 12.f
+@property (assign, nonatomic) CGFloat brushLineMaxWidth;
+
+/// 画笔最小宽度
+/// 默认 2.f
+@property (assign, nonatomic) CGFloat brushLineMinWidth;
 
 #pragma mark - < 贴图相关 >
 /// 贴图模型数组
 @property (copy, nonatomic) NSArray<HXPhotoEditChartletTitleModel *> *chartletModels;
 
 /// 请求获取贴图模型
-/// 内部没有做缓存处理，需要自己去做贴图资源的缓存
+/// block会在贴图列表弹出之后调用
 /// 优先级高于 chartletModels
 @property (copy, nonatomic) void (^ requestChartletModels)(void(^ chartletModels)(NSArray<HXPhotoEditChartletTitleModel *> *chartletModels));
 
@@ -67,6 +77,8 @@ typedef NS_ENUM(NSUInteger, HXPhotoEditAspectRatio) {
 /// 设置自定义比例必须设置 aspectRatio = HXPhotoEditAspectRatioType_Custom，否则无效
 @property (assign, nonatomic) CGSize customAspectRatio;
 
+/// 圆形裁剪框，只要裁剪功能 并且 固定裁剪比例为 HXPhotoEditAspectRatioType_1x1 时有效
+@property (assign, nonatomic) BOOL isRoundCliping;
 @end
 
 NS_ASSUME_NONNULL_END

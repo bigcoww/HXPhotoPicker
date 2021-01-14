@@ -1,9 +1,9 @@
 //
 //  HXCustomCameraController.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2017/10/31.
-//  Copyright © 2017年 洪欣. All rights reserved.
+//  Created by Silence on 2017/10/31.
+//  Copyright © 2017年 Silence. All rights reserved.
 //
 
 #import "HXCustomCameraController.h"
@@ -13,7 +13,7 @@
 
 const CGFloat HXZoomRate = 1.0f;
 
-@interface HXCustomCameraController ()<AVCaptureFileOutputRecordingDelegate, AVCaptureVideoDataOutputSampleBufferDelegate>
+@interface HXCustomCameraController ()<AVCaptureFileOutputRecordingDelegate>
 @property (strong, nonatomic) dispatch_queue_t videoQueue;
 @property (strong, nonatomic) AVCaptureSession *captureSession;
 @property (weak, nonatomic) AVCaptureDeviceInput *activeVideoInput;
@@ -24,7 +24,6 @@ const CGFloat HXZoomRate = 1.0f;
 @property (strong, nonatomic) CMMotionManager *motionManager;
 @property (nonatomic, assign) UIDeviceOrientation deviceOrientation;
 @property (nonatomic, assign) UIDeviceOrientation imageOrientation;
-@property (strong, nonatomic) AVCaptureVideoDataOutput *captureDataOutput;
 @end
 
 @implementation HXCustomCameraController
@@ -50,7 +49,6 @@ const CGFloat HXZoomRate = 1.0f;
     [self.motionManager stopDeviceMotionUpdates];
 }
 - (void)dealloc {
-    if (HXShowLog) NSSLog(@"dealloc");
 }
 /// 重力感应回调
 - (void)handleDeviceMotion:(CMDeviceMotion *)deviceMotion {
@@ -91,18 +89,6 @@ const CGFloat HXZoomRate = 1.0f;
     self.captureSession = [[AVCaptureSession alloc] init];
 }
 
-- (AVCaptureVideoDataOutput *)captureDataOutput {
-    if (!_captureDataOutput) {
-        _captureDataOutput = [[AVCaptureVideoDataOutput alloc] init];
-        _captureDataOutput.alwaysDiscardsLateVideoFrames = YES;
-        dispatch_queue_t queue = dispatch_queue_create("cameraQueue", NULL);
-        [_captureDataOutput setSampleBufferDelegate:self queue:queue];
-        _captureDataOutput.videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
-                                [NSNumber numberWithInt:kCVPixelFormatType_32BGRA], kCVPixelBufferPixelFormatTypeKey,
-                                nil];
-    }
-    return _captureDataOutput;
-}
 - (void)setupPreviewLayer:(AVCaptureVideoPreviewLayer *)previewLayer startSessionCompletion:(void (^)(BOOL success))completion {
     if ([self.captureSession canSetSessionPreset:self.sessionPreset]) {
         self.captureSession.sessionPreset = self.sessionPreset;
@@ -119,6 +105,7 @@ const CGFloat HXZoomRate = 1.0f;
     if (self.defaultFrontCamera) {
         videoDevice = [self cameraWithPosition:AVCaptureDevicePositionFront];
     }
+    
     AVCaptureDeviceInput *videoInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:nil];
     if (videoInput) {
         if ([self.captureSession canAddInput:videoInput]) {
@@ -167,14 +154,6 @@ const CGFloat HXZoomRate = 1.0f;
 - (void)removeMovieOutput {
     [self.captureSession removeOutput:self.movieOutput];
 }
-//- (void)addDataOutput {
-//    if ([self.captureSession canAddOutput:self.captureDataOutput]) {
-//        [self.captureSession addOutput:self.captureDataOutput];
-//    }
-//}
-//- (void)removeDataOutput {
-//    [self.captureSession removeOutput:self.captureDataOutput];
-//}
 - (BOOL)addAudioInput {
     NSError *error;
     AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
@@ -279,11 +258,14 @@ const CGFloat HXZoomRate = 1.0f;
 }
 - (void)focusAtPoint:(CGPoint)point {
     AVCaptureDevice *device = [self activeCamera];
-    if (device.isFocusPointOfInterestSupported && [device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
+    if (device.isFocusPointOfInterestSupported && [device isFocusModeSupported:AVCaptureFocusModeContinuousAutoFocus]) {
         NSError *error;
         if ([device lockForConfiguration:&error]) {
+            if (device.smoothAutoFocusSupported) {
+                device.smoothAutoFocusEnabled = YES;
+            }
             device.focusPointOfInterest = point;
-            device.focusMode = AVCaptureFocusModeAutoFocus;
+            device.focusMode = AVCaptureFocusModeContinuousAutoFocus;
             [device unlockForConfiguration];
         }else {
             if ([self.delegate respondsToSelector:@selector(deviceConfigurationFailedWithError:)]) {
@@ -305,9 +287,9 @@ static const NSString *HXCustomCameraAdjustingExposureContext;
         if ([device lockForConfiguration:&error]) {
             device.exposurePointOfInterest = point;
             device.exposureMode = exposureMode;
-            if ([device isExposureModeSupported:AVCaptureExposureModeLocked]) {
-                [device addObserver:self forKeyPath:@"adjustingExposure" options:NSKeyValueObservingOptionNew context:&HXCustomCameraAdjustingExposureContext];
-            }
+//            if ([device isExposureModeSupported:AVCaptureExposureModeLocked]) {
+//                [device addObserver:self forKeyPath:@"adjustingExposure" options:NSKeyValueObservingOptionNew context:&HXCustomCameraAdjustingExposureContext];
+//            }
             [device unlockForConfiguration];
         }else {
             if ([self.delegate respondsToSelector:@selector(deviceConfigurationFailedWithError:)]) {
@@ -318,21 +300,21 @@ static const NSString *HXCustomCameraAdjustingExposureContext;
 }
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
     if (context == &HXCustomCameraAdjustingExposureContext) {
-        AVCaptureDevice *device = (AVCaptureDevice *)object;
-        if (!device.isAdjustingExposure && [device isExposureModeSupported:AVCaptureExposureModeLocked]) {
-            [object removeObserver:self forKeyPath:@"adjustingExposure" context:&HXCustomCameraAdjustingExposureContext];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                NSError *error;
-                if ([device lockForConfiguration:&error]) {
-                    device.exposureMode = AVCaptureExposureModeLocked;
-                    [device unlockForConfiguration];
-                }else {
-                    if ([self.delegate respondsToSelector:@selector(deviceConfigurationFailedWithError:)]) {
-                        [self.delegate deviceConfigurationFailedWithError:error];
-                    }
-                }
-            });
-        }
+//        AVCaptureDevice *device = (AVCaptureDevice *)object;
+//        if (!device.isAdjustingExposure && [device isExposureModeSupported:AVCaptureExposureModeLocked]) {
+//            [object removeObserver:self forKeyPath:@"adjustingExposure" context:&HXCustomCameraAdjustingExposureContext];
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                NSError *error;
+//                if ([device lockForConfiguration:&error]) {
+//                    device.exposureMode = AVCaptureExposureModeLocked;
+//                    [device unlockForConfiguration];
+//                }else {
+//                    if ([self.delegate respondsToSelector:@selector(deviceConfigurationFailedWithError:)]) {
+////                        [self.delegate deviceConfigurationFailedWithError:error];
+//                    }
+//                }
+//            });
+//        }
     }else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
@@ -355,6 +337,9 @@ static const NSString *HXCustomCameraAdjustingExposureContext;
     
     NSError *error;
     if ([device lockForConfiguration:&error]) {
+        if (device.smoothAutoFocusSupported) {
+            device.smoothAutoFocusEnabled = YES;
+        }
         
         if (canResetFocus) {
             device.focusMode = focusMode;
@@ -531,14 +516,6 @@ static const NSString *HXCustomCameraAdjustingExposureContext;
     }
 }
 
-- (void)captureOutput:(AVCaptureOutput *)output didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
-    if (CMSampleBufferIsValid(sampleBuffer)) {
-        UIImage *image = [[UIImage hx_imageFromSampleBuffer:sampleBuffer] hx_rotationImage:UIImageOrientationRight];
-        if (image) {
-            [HXPhotoCommon photoCommon].cameraImage = image;
-        }
-    }
-}
 #pragma mark - AVCaptureFileOutputRecordingDelegate
 // 开始录制
 - (void)captureOutput:(AVCaptureFileOutput *)output didStartRecordingToOutputFileAtURL:(NSURL *)fileURL fromConnections:(NSArray<AVCaptureConnection *> *)connections {

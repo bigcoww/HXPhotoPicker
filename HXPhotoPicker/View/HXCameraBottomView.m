@@ -1,9 +1,9 @@
 //
 //  HXCameraBottomView.m
-//  照片选择器
+//  HXPhotoPickerExample
 //
-//  Created by 洪欣 on 2020/7/17.
-//  Copyright © 2020 洪欣. All rights reserved.
+//  Created by Silence on 2020/7/17.
+//  Copyright © 2020 Silence. All rights reserved.
 //
 
 #import "HXCameraBottomView.h"
@@ -83,6 +83,16 @@
         return;
     }
     self.inTakePictures = YES;
+    self.backBtn.userInteractionEnabled = NO;
+    [UIView animateWithDuration:0.15 animations:^{
+        self.zoomOutView.transform = CGAffineTransformMakeScale(0.6, 0.6);
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.15 animations:^{
+            self.zoomOutView.transform = CGAffineTransformIdentity;
+        } completion:^(BOOL finished) {
+            self.backBtn.userInteractionEnabled = YES;
+        }];
+    }];
     if (self.takePictures) {
         self.takePictures();
     }
@@ -92,7 +102,7 @@
         return;
     }
     if (longGesture.state == UIGestureRecognizerStateBegan) {
-        [self.playView clean];
+        [self.playView clear];
         CGPoint point = [longGesture locationInView:[UIApplication sharedApplication].keyWindow];
         self.firstLongGestureLocation = point;
         self.inTranscribe = YES;
@@ -106,6 +116,7 @@
             if (self.startTranscribe && self.inTranscribe) {
                 self.backBtn.hidden = YES;
                 self.startTranscribe();
+                [self.playView startAnimation];
             }
         }];
     }else if (longGesture.state == UIGestureRecognizerStateChanged) {
@@ -132,7 +143,7 @@
             self.zoomInView.transform = CGAffineTransformIdentity;
             self.zoomOutView.transform = CGAffineTransformIdentity;
         }];
-        [self.playView clean];
+        [self.playView clear];
         if (self.endTranscribe) {
             self.endTranscribe(self.isAnimation);
         }
@@ -149,9 +160,14 @@
         self.takePictures();
     }
 }
+- (void)videoRecordEnd {
+    self.longGesture.enabled = NO;
+    self.longGesture.enabled = YES;
+}
 - (void)setManager:(HXPhotoManager *)manager {
     _manager = manager;
     self.playView.color = self.manager.configuration.cameraFocusBoxColor;
+    self.playView.duration = self.manager.configuration.videoMaximumDuration + 0.4f;
     
     switch (self.manager.configuration.customCameraType) {
         case HXPhotoCustomCameraTypeUnused: {
@@ -196,9 +212,6 @@
     }
 }
 
-- (void)changeTime:(NSTimeInterval)time {
-    self.playView.progress = time / self.manager.configuration.videoMaximumDuration;
-}
 - (void)startRecord {
     
 }
@@ -206,7 +219,7 @@
     self.longGesture.enabled = NO;
     self.longGesture.enabled = YES;
     
-    [self.playView clean];
+    [self.playView clear];
     self.playView.transform = CGAffineTransformIdentity;
 }
 - (IBAction)backClick:(UIButton *)sender {
@@ -237,6 +250,7 @@
 - (HXFullScreenCameraPlayView *)playView {
     if (!_playView) {
         _playView = [[HXFullScreenCameraPlayView alloc] initWithFrame:CGRectMake(0, 0, 90, 90) color:self.manager.configuration.cameraFocusBoxColor];
+        _playView.duration = self.manager.configuration.videoMaximumDuration;
     }
     return _playView;
 }
