@@ -552,11 +552,15 @@
     if (self.selectedList.count) {
         self.selectedAssetList = [NSMutableArray arrayWithCapacity:self.selectedList.count];
         self.tempSelectedModelList = [NSMutableArray arrayWithCapacity:self.selectedList.count];
+        NSInteger index = 0;
         for (HXPhotoModel *model in _selectedList) {
+            model.selectedIndex = index;
+            model.selectIndexStr = @(index + 1).stringValue;
             if (model.asset) {
                 [self.selectedAssetList addObject:model.asset];
                 [self.tempSelectedModelList addObject:model];
             }
+            index++;
         }
     }
     if (self.iCloudUploadArray.count) {
@@ -671,7 +675,7 @@
             [allArray insertObject:model atIndex:0];
         }
     }
-    if (_tempCameraAssetModels) {
+    if (_tempCameraAssetModels && !self.configuration.singleSelected) {
         NSInteger index = 0;
         for (HXPhotoModel *model in _tempCameraAssetModels) {
             if (self.configuration.reverseDate) {
@@ -1349,6 +1353,9 @@
     self.firstHasCameraAsset = YES;
 }
 - (void)afterSelectedListdeletePhotoModel:(HXPhotoModel *)model {
+    if ([self.tempCameraAssetModels containsObject:model]) {
+        [self.tempCameraAssetModels removeObject:model];
+    }
     if (![self.endSelectedList containsObject:model]) {
         return;
     }
